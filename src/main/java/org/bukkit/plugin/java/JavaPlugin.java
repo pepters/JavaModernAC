@@ -5,8 +5,13 @@ import java.util.logging.Logger;
 
 import org.bukkit.Server;
 import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.plugin.Plugin;
 
-public class JavaPlugin {
+/**
+ * Simplified stand-in for Bukkit's {@code JavaPlugin}. It implements the
+ * {@link Plugin} marker so code depending on the interface can compile.
+ */
+public class JavaPlugin implements Plugin {
     private final FileConfiguration config = new FileConfiguration();
 
     public void saveDefaultConfig() {}
