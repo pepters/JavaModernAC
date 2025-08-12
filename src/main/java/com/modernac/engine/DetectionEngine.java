@@ -54,7 +54,7 @@ public class DetectionEngine {
         }
         evaluate(uuid, record);
         int ping = Bukkit.getPlayer(uuid) != null ? Bukkit.getPlayer(uuid).getPing() : 0;
-        double tps = Bukkit.getServer().getTPS()[0];
+        double tps = Bukkit.getTPS()[0];
         AlertDetail detail = new AlertDetail(result.getFamily(), result.getWindow().name(), result.getEvidenceScore(), ping, tps);
         plugin.getAlertEngine().queueAlert(uuid, detail, false);
     }

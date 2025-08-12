@@ -11,4 +11,5 @@ public interface Player extends CommandSender {
     String getName();
     int getPing();
     AttributeInstance getAttribute(Attribute attribute);
+    boolean isOnline();
 }
