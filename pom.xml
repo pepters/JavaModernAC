@@ -7,8 +7,7 @@
      <packaging>jar</packaging>
      <name>ModernAC</name>
      <properties>
-         <maven.compiler.source>1.8</maven.compiler.source>
-         <maven.compiler.target>1.8</maven.compiler.target>
+         <maven.compiler.release>17</maven.compiler.release>
      </properties>
     <repositories>
         <repository>
@@ -16,20 +15,20 @@
             <url>https://repo.papermc.io/repository/maven-public/</url>
         </repository>
         <repository>
-            <id>spigot-repo</id>
-            <url>https://hub.spigotmc.org/nexus/content/repositories/snapshots/</url>
+            <id>codemc-releases</id>
+            <url>https://repo.codemc.io/repository/maven-releases/</url>
         </repository>
         <repository>
-            <id>jitpack.io</id>
-            <url>https://jitpack.io</url>
+            <id>codemc-snapshots</id>
+            <url>https://repo.codemc.io/repository/maven-snapshots/</url>
         </repository>
     </repositories>
     <dependencies>
-        <!-- PacketEvents v2 (Spigot module), plugin installed separately, so provided -->
+        <!-- PacketEvents v2 Spigot, plugin installed separately so provided -->
         <dependency>
-            <groupId>io.github.retrooper.packetevents</groupId>
-            <artifactId>spigot</artifactId>
-            <version>2.0.0</version>
+            <groupId>com.github.retrooper</groupId>
+            <artifactId>packetevents-spigot</artifactId>
+            <version>2.9.4</version>
             <scope>provided</scope>
         </dependency>
 
