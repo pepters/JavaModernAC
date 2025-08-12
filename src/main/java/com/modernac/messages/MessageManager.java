@@ -6,6 +6,7 @@ import java.util.Map;
 
 import com.modernac.ModernACPlugin;
 import org.bukkit.ChatColor;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 
@@ -22,9 +23,12 @@ public class MessageManager {
     private void loadMessages() {
         File file = new File(plugin.getDataFolder(), "messages.yml");
         FileConfiguration config = YamlConfiguration.loadConfiguration(file);
-        for (String key : config.getConfigurationSection("messages").getKeys(false)) {
-            String msg = ChatColor.translateAlternateColorCodes('&', config.getString("messages." + key));
-            messages.put(key, msg);
+        ConfigurationSection section = config.getConfigurationSection("messages");
+        if (section != null) {
+            for (String key : section.getKeys(false)) {
+                String msg = ChatColor.translateAlternateColorCodes('&', config.getString("messages." + key));
+                messages.put(key, msg);
+            }
         }
     }
 
