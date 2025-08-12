@@ -2,6 +2,8 @@ package com.modernac.checks.signatures.nursultan;
 
 import com.modernac.ModernACPlugin;
 import com.modernac.checks.aim.AimCheck;
+import com.modernac.engine.DetectionResult;
+import com.modernac.engine.Window;
 import com.modernac.player.PlayerData;
 import com.modernac.player.RotationData;
 
@@ -31,7 +33,8 @@ public class NRSnapTailCheck extends AimCheck {
         ticks++;
         if (yaw < 0.5) {
             if (ticks >= 3 && ticks <= 6) {
-                fail(10, true);
+                DetectionResult result = new DetectionResult("GEOMETRY", 1.0, Window.SHORT, true, true, true);
+                fail(result);
                 tracking = false;
             }
         } else {

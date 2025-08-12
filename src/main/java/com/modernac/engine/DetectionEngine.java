@@ -2,65 +2,93 @@ package com.modernac.engine;
 
 import com.modernac.ModernACPlugin;
 import com.modernac.checks.Check;
-import org.bukkit.Bukkit;
-import org.bukkit.scheduler.BukkitTask;
+import com.modernac.manager.PunishmentTier;
+import com.modernac.manager.MitigationManager;
+import com.modernac.config.ConfigManager;
 
+import java.util.EnumMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Aggregates evidence from independent checks and turns it into a confidence score.
- * Heavy math is offloaded to async tasks; only small state mutation happens on the calling thread.
+ * Aggregates evidence from independent checks and applies policy logic.
  */
 public class DetectionEngine {
-    private static final double BAN_THRESHOLD = 1.0; // 100% confidence
-
     private final ModernACPlugin plugin;
     private final Map<UUID, PlayerRecord> records = new ConcurrentHashMap<>();
-    private BukkitTask decayTask;
 
     public DetectionEngine(ModernACPlugin plugin) {
         this.plugin = plugin;
-        scheduleDecay();
     }
 
-    /**
-     * Add evidence for a player.
-     *
-     * @param check       The originating check
-     * @param vl          violation level contribution (0-100)
-     * @param punishable  whether the evidence may lead to punishments
-     * @param experimental whether the check is experimental
-     */
     public void record(Check check, int vl, boolean punishable, boolean experimental) {
         if (experimental && !plugin.getConfigManager().isExperimentalDetections()) {
-            return; // ignore if experimental detections disabled
+            return;
         }
-
-        UUID uuid = check.getUuid();
-        PlayerRecord record = records.computeIfAbsent(uuid, k -> new PlayerRecord());
-
-        // map violation level into [0,1] confidence contribution
         double evidence = Math.min(1.0, vl / 100.0);
-        record.confidence = Math.min(1.0, record.confidence + evidence);
+        DetectionResult result = new DetectionResult("LEGACY", evidence, Window.SHORT, true, true, false);
+        record(check, result);
+    }
 
-        int totalVl = check.addVl(vl);
-        plugin.getDebugLogger().log(uuid + " failed " + check.getName() + " VL=" + totalVl);
+    public void record(Check check, DetectionResult result) {
+        if (check.isExperimental() && !plugin.getConfigManager().isExperimentalDetections()) {
+            return;
+        }
+        UUID uuid = check.getUuid();
+        PlayerRecord record = records.computeIfAbsent(uuid, u -> new PlayerRecord());
+        FamilyRecord fam = record.families.computeIfAbsent(result.getFamily(), f -> new FamilyRecord());
+        double prev = fam.windowScores.getOrDefault(result.getWindow(), 0.0);
+        fam.windowScores.put(result.getWindow(), Math.max(prev, result.getEvidenceScore()));
+        fam.latencyOK &= result.isLatencyOK();
+        fam.stabilityOK &= result.isStabilityOK();
+        ConfigManager cfg = plugin.getConfigManager();
+        PunishmentTier tier = cfg.getCheckTier(check.getName());
+        if (tier.ordinal() < fam.tier.ordinal()) {
+            fam.tier = tier;
+        }
+        evaluate(uuid, record);
+        plugin.getAlertManager().alert(uuid, check.getName(), (int) Math.round(result.getEvidenceScore() * 100));
+    }
 
-        plugin.getAlertManager().alert(uuid, check.getName(), totalVl);
+    private void evaluate(UUID uuid, PlayerRecord record) {
+        ConfigManager cfg = plugin.getConfigManager();
+        int requiredFamilies = cfg.getMinFamiliesForBan();
+        boolean requireMultiWindow = cfg.isMultiWindowConfirmationRequired();
+        int familyCount = 0;
+        int windowCount = 0;
+        double total = 0.0;
+        PunishmentTier highest = null;
+        for (FamilyRecord fam : record.families.values()) {
+            double famScore = fam.windowScores.values().stream().mapToDouble(Double::doubleValue).max().orElse(0.0);
+            if (fam.latencyOK && fam.stabilityOK && famScore >= 0.90) {
+                familyCount++;
+                windowCount += (int) fam.windowScores.values().stream().filter(v -> v >= 0.90).count();
+                if (highest == null || fam.tier.ordinal() < highest.ordinal()) {
+                    highest = fam.tier;
+                }
+                total += famScore;
+            }
+        }
+        double avg = familyCount > 0 ? total / familyCount : 0.0;
+        MitigationManager mit = plugin.getMitigationManager();
+        double maxReduction = cfg.getMaxDamageReduction();
+        int reduction = (int) Math.round(avg * maxReduction * 100);
+        mit.mitigate(uuid, reduction);
 
-        double maxReduction = plugin.getConfigManager().getMaxDamageReduction();
-        int reduction = (int) Math.round(record.confidence * maxReduction * 100);
-        plugin.getMitigationManager().mitigate(uuid, reduction);
-
-        if (punishable && !experimental && record.confidence >= BAN_THRESHOLD) {
-            plugin.getPunishmentManager().schedule(uuid);
+        if (familyCount >= requiredFamilies && (!requireMultiWindow || windowCount >= 2) && highest != null && highest != PunishmentTier.EXPERIMENTAL) {
+            record.currentTier = highest;
+            plugin.getPunishmentManager().schedule(uuid, highest);
+        } else {
+            record.currentTier = null;
+            plugin.getPunishmentManager().cancel(uuid);
         }
     }
 
-    public boolean isConfident(UUID uuid) {
-        return records.getOrDefault(uuid, PlayerRecord.EMPTY).confidence >= BAN_THRESHOLD;
+    public boolean isPunishable(UUID uuid, PunishmentTier tier) {
+        PlayerRecord record = records.get(uuid);
+        if (record == null || record.currentTier == null) return false;
+        return record.currentTier.ordinal() <= tier.ordinal();
     }
 
     public void reset(UUID uuid) {
@@ -68,32 +96,15 @@ public class DetectionEngine {
         plugin.getPunishmentManager().cancel(uuid);
     }
 
-    public void shutdown() {
-        if (decayTask != null) {
-            decayTask.cancel();
-        }
-    }
-
-    private void scheduleDecay() {
-        decayTask = Bukkit.getScheduler().runTaskLaterAsynchronously(plugin, () -> {
-            decay();
-            scheduleDecay();
-        }, 20L);
-    }
-
-    private void decay() {
-        double decayAmount = 0.02; // lose 2% per second
-        records.forEach((uuid, record) -> {
-            record.confidence = Math.max(0.0, record.confidence - decayAmount);
-            if (record.confidence < BAN_THRESHOLD) {
-                plugin.getPunishmentManager().cancel(uuid);
-            }
-        });
-    }
-
     private static class PlayerRecord {
-        static final PlayerRecord EMPTY = new PlayerRecord();
-        double confidence = 0.0;
+        final Map<String, FamilyRecord> families = new ConcurrentHashMap<>();
+        PunishmentTier currentTier;
+    }
+
+    private static class FamilyRecord {
+        final Map<Window, Double> windowScores = new EnumMap<>(Window.class);
+        boolean latencyOK = true;
+        boolean stabilityOK = true;
+        PunishmentTier tier = PunishmentTier.MEDIUM;
     }
 }
-

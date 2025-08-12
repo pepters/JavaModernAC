@@ -2,6 +2,7 @@ package com.modernac.config;
 
 import com.modernac.ModernACPlugin;
 import org.bukkit.configuration.file.FileConfiguration;
+import com.modernac.manager.PunishmentTier;
 
 public class ConfigManager {
     private final FileConfiguration config;
@@ -23,7 +24,7 @@ public class ConfigManager {
     }
 
     public double getTpsSoftGuard() {
-        return Double.parseDouble(config.getString("latency.tps_soft_guard", "16.0"));
+        return config.getDouble("latency.tps_soft_guard", 18.0);
     }
 
     public boolean isExperimentalDetections() {
@@ -67,12 +68,19 @@ public class ConfigManager {
         return getRange("alerts.delay_seconds", 5, 10)[1];
     }
 
-    public int getPunishmentDelayMin() {
-        return getRange("punishments.decision_delay_minutes", 2, 7)[0];
-    }
-
-    public int getPunishmentDelayMax() {
-        return getRange("punishments.decision_delay_minutes", 2, 7)[1];
+    public int[] getTierDelaySeconds(PunishmentTier tier) {
+        switch (tier) {
+            case CRITICAL:
+                return getRange("punishments.tiers.CRITICAL.delay_seconds", 30, 60);
+            case HIGH:
+                int[] high = getRange("punishments.tiers.HIGH.delay_minutes", 2, 4);
+                return new int[]{high[0] * 60, high[1] * 60};
+            case MEDIUM:
+                int[] med = getRange("punishments.tiers.MEDIUM.delay_minutes", 4, 7);
+                return new int[]{med[0] * 60, med[1] * 60};
+            default:
+                return new int[]{0, 0};
+        }
     }
 
     public int getMitigationApplyDelayMin() {
@@ -97,6 +105,25 @@ public class ConfigManager {
 
     public boolean isDetectionsDebug() {
         return config.getBoolean("logging.detections_debug", false);
+    }
+
+    public int getMinFamiliesForBan() {
+        return config.getInt("policy.min_independent_families_for_ban", 2);
+    }
+
+    public boolean isMultiWindowConfirmationRequired() {
+        return config.getBoolean("policy.require_multi_window_confirmation", true);
+    }
+
+    public PunishmentTier getCheckTier(String checkName) {
+        String key = checkName.replace('-', '_').toUpperCase();
+        String path = "checks_registry." + key;
+        String value = config.getString(path, "MEDIUM").toUpperCase();
+        try {
+            return PunishmentTier.valueOf(value);
+        } catch (IllegalArgumentException e) {
+            return PunishmentTier.MEDIUM;
+        }
     }
 }
 

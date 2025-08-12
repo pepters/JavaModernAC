@@ -1,20 +1,89 @@
 commands:
   kick: "kick {player} Unfair combat advantage"
   ban: "ban {player} 7d Unfair combat advantage"
+
 latency:
   unstable_connection_latency_limit: 1750
-  tps_soft_guard: 16.0
+  tps_soft_guard: 18.0
+
 checks:
   experimental_detections: true
-  combat_tolerance: normal
+  combat_tolerance: "normal"
+
+policy:
+  min_independent_families_for_ban: 2
+  require_multi_window_confirmation: true
+  hysteresis_drop_pct: 20
+
 mitigation:
   max_damage_reduction: 0.90
-  apply_delay_seconds: [5,15]
-  duration_seconds: [60,120]
+  apply_delay_seconds: [5, 15]
+  duration_seconds: [60, 120]
+
+punishments:
+  adaptive: true
+  tiers:
+    CRITICAL:
+      delay_seconds: [30, 60]
+      min_families: 2
+      allow_single_critical_family: true
+      require_multi_window: true
+      require_latency_ok: true
+      require_stability_ok: true
+    HIGH:
+      delay_minutes: [2, 4]
+      min_families: 2
+      require_multi_window: true
+      require_latency_ok: true
+      require_stability_ok: true
+    MEDIUM:
+      delay_minutes: [4, 7]
+      min_families: 2
+      require_long_window: true
+      require_latency_ok: true
+      require_stability_ok: true
+    EXPERIMENTAL:
+      ban: false
+      mitigation_only: true
+
+  critical_hard_checks:
+    - LB_GCD
+    - NR_SNAPTAIL
+    - CORR_USEENTITY_YAW
+    - NR_PID_TAIL
+
+  critical_gating:
+    min_windows: 2
+    require_on_target_context: true
+    require_attack_alignment: true
+    min_confidence: 0.92
+    long_window_required_for_gcd: true
+    max_allowed_ping_ms: 180
+    tps_min: 18.0
+
+checks_registry:
+  NR_SNAPTAIL: CRITICAL
+  NR_PID_TAIL: CRITICAL
+  NR_INTERP: MEDIUM
+  NR_STICK: MEDIUM
+  NR_LAGBYPASS: MEDIUM
+  LB_GCD: CRITICAL
+  LB_FRAMELOCK: HIGH
+  LB_TWEEN: MEDIUM
+  LB_PREAIM: MEDIUM
+  CORR_USEENTITY_YAW: CRITICAL
+
 alerts:
   staff_permission: "ac.alerts"
-  delay_seconds: [5,10]
-punishments:
-  decision_delay_minutes: [2,7]
+  delay_seconds: [5, 10]
+
 logging:
   detections_debug: true
+  include_reason_vectors: true
+  fpr_guard_summary: true
+
+fpr_guard:
+  enable: true
+  hourly_flag_rate_soft_cap: 0.02
+  daily_flag_rate_soft_cap: 0.01
+  auto_relax_aggression: true

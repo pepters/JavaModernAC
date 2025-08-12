@@ -2,6 +2,7 @@ package com.modernac.checks;
 
 import com.modernac.ModernACPlugin;
 import com.modernac.player.PlayerData;
+import com.modernac.engine.DetectionResult;
 
 import java.util.UUID;
 
@@ -26,6 +27,10 @@ public abstract class Check {
 
     protected void fail(int vl, boolean punishable) {
         plugin.getDetectionEngine().record(this, vl, punishable, experimental);
+    }
+
+    protected void fail(DetectionResult result) {
+        plugin.getDetectionEngine().record(this, result);
     }
 
     public abstract void handle(Object packet);

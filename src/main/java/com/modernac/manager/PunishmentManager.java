@@ -3,6 +3,7 @@ package com.modernac.manager;
 import com.modernac.ModernACPlugin;
 import org.bukkit.Bukkit;
 import org.bukkit.scheduler.BukkitTask;
+import com.modernac.manager.PunishmentTier;
 
 import java.util.Map;
 import java.util.Random;
@@ -22,15 +23,15 @@ public class PunishmentManager {
         this.plugin = plugin;
     }
 
-    public void schedule(UUID uuid) {
-        // don't schedule twice
+    public void schedule(UUID uuid, PunishmentTier tier) {
         if (tasks.containsKey(uuid)) return;
-        int min = plugin.getConfigManager().getPunishmentDelayMin();
-        int max = plugin.getConfigManager().getPunishmentDelayMax();
-        long delay = 20L * 60L * (min + random.nextInt(Math.max(1, max - min + 1)));
+        int[] range = plugin.getConfigManager().getTierDelaySeconds(tier);
+        int min = range[0];
+        int max = range[1];
+        long delay = 20L * (min + random.nextInt(Math.max(1, max - min + 1)));
         BukkitTask task = Bukkit.getScheduler().runTaskLater(plugin, () -> {
             tasks.remove(uuid);
-            if (plugin.getDetectionEngine().isConfident(uuid)) {
+            if (plugin.getDetectionEngine().isPunishable(uuid, tier)) {
                 String command = plugin.getConfigManager().getBanCommand()
                         .replace("{player}", Bukkit.getOfflinePlayer(uuid).getName());
                 Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command);

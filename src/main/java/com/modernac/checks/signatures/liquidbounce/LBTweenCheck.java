@@ -2,6 +2,8 @@ package com.modernac.checks.signatures.liquidbounce;
 
 import com.modernac.ModernACPlugin;
 import com.modernac.checks.aim.AimCheck;
+import com.modernac.engine.DetectionResult;
+import com.modernac.engine.Window;
 import com.modernac.player.PlayerData;
 import com.modernac.player.RotationData;
 
@@ -37,7 +39,8 @@ public class LBTweenCheck extends AimCheck {
                 prev = d;
             }
             if (std < 0.01 && ratioMax < 0.02) {
-                fail(10, true);
+                DetectionResult result = new DetectionResult("GEOMETRY", 0.9, Window.LONG, true, true, true);
+                fail(result);
             }
             yawDeltas.poll();
         }
