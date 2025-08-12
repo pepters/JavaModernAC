@@ -22,15 +22,10 @@ public abstract class Check {
     public boolean isExperimental() { return experimental; }
     public UUID getUuid() { return data.getUuid(); }
 
+    public int addVl(int amount) { return data.addVl(amount); }
+
     protected void fail(int vl, boolean punishable) {
-        int total = data.addVl(vl);
-        plugin.getDebugLogger().log(getUuid() + " failed " + name + " VL=" + total);
-        plugin.getAlertManager().alert(getUuid(), name, total);
-        int maxReduction = plugin.getConfigManager().getMaxMitigationReduction();
-        plugin.getMitigationManager().mitigate(getUuid(), Math.min(total, maxReduction));
-        if (!experimental && punishable && total > 50) {
-            plugin.getPunishmentManager().punish(getUuid());
-        }
+        plugin.getDetectionEngine().record(this, vl, punishable, experimental);
     }
 
     public abstract void handle(Object packet);
