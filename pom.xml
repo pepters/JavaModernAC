@@ -16,21 +16,24 @@
              <url>https://repo.papermc.io/repository/maven-public/</url>
          </repository>
          <repository>
-             <id>jitpack.io</id>
-             <url>https://jitpack.io</url>
+             <id>codemc-repo</id>
+             <url>https://repo.codemc.io/repository/maven-public/</url>
          </repository>
      </repositories>
      <dependencies>
-        <dependency>
-            <groupId>com.destroystokyo.paper</groupId>
-            <artifactId>paper-api</artifactId>
-            <version>1.16.5-R0.1-SNAPSHOT</version>
-            <scope>provided</scope>
-        </dependency>
+         <!-- PacketEvents v2 as compileOnly/provided (plugin installed separately) -->
          <dependency>
-             <groupId>com.github.retrooper</groupId>
+             <groupId>io.github.retrooper</groupId>
              <artifactId>packetevents</artifactId>
              <version>2.0.0</version>
+             <scope>provided</scope>
+         </dependency>
+
+         <!-- Paper API 1.16.5 -->
+         <dependency>
+             <groupId>com.destroystokyo.paper</groupId>
+             <artifactId>paper-api</artifactId>
+             <version>1.16.5-R0.1-SNAPSHOT</version>
              <scope>provided</scope>
          </dependency>
      </dependencies>
