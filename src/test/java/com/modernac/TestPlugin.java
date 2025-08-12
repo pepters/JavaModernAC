@@ -37,7 +37,12 @@ public class TestPlugin extends ModernACPlugin {
         };
         this.punishmentManager = new PunishmentManager(this) {
             @Override
-            public void punish(UUID uuid) {
+            public void schedule(UUID uuid) {
+                // no-op for tests
+            }
+
+            @Override
+            public void cancel(UUID uuid) {
                 // no-op for tests
             }
         };

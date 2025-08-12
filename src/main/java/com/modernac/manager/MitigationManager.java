@@ -27,17 +27,21 @@ public class MitigationManager {
     public void mitigate(UUID uuid, int level) {
         mitigated.put(uuid, level);
 
-        // schedule application after random delay (5-15s) on main thread
+        // schedule application after random delay on main thread
         BukkitTask oldApply = applyTasks.remove(uuid);
         if (oldApply != null) oldApply.cancel();
-        long applyDelay = 20L * (5 + random.nextInt(11));
+        int applyMin = plugin.getConfigManager().getMitigationApplyDelayMin();
+        int applyMax = plugin.getConfigManager().getMitigationApplyDelayMax();
+        long applyDelay = 20L * (applyMin + random.nextInt(Math.max(1, applyMax - applyMin + 1)));
         BukkitTask applyTask = Bukkit.getScheduler().runTaskLater(plugin, () -> apply(uuid), applyDelay);
         applyTasks.put(uuid, applyTask);
 
-        // schedule removal after configured duration and restore base value
+        // schedule removal after configured duration range and restore base value
         BukkitTask oldRemove = removeTasks.remove(uuid);
         if (oldRemove != null) oldRemove.cancel();
-        long duration = 20L * plugin.getConfigManager().getMitigationDurationSeconds();
+        int durMin = plugin.getConfigManager().getMitigationDurationMin();
+        int durMax = plugin.getConfigManager().getMitigationDurationMax();
+        long duration = 20L * (durMin + random.nextInt(Math.max(1, durMax - durMin + 1)));
         BukkitTask removeTask = Bukkit.getScheduler().runTaskLater(plugin, () -> {
             mitigated.remove(uuid);
             Double base = baseValues.remove(uuid);

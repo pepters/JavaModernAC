@@ -1,12 +1,20 @@
 commands:
-  kick: "kick %player% Using disallowed modifications"
-  ban: "ban %player% Cheating"
-unstable_connection_limit: 1750
-experimental_detections: false
-combat_tolerance: NORMAL
-alert_delay_min: 5
-alert_delay_max: 10
-punishment_delay_min: 2
-punishment_delay_max: 7
-mitigation_duration_seconds: 60
-max_mitigation_reduction: 90
+  kick: "kick {player} Unfair combat advantage"
+  ban: "ban {player} 7d Unfair combat advantage"
+latency:
+  unstable_connection_latency_limit: 1750
+  tps_soft_guard: 16.0
+checks:
+  experimental_detections: true
+  combat_tolerance: normal
+mitigation:
+  max_damage_reduction: 0.90
+  apply_delay_seconds: [5,15]
+  duration_seconds: [60,120]
+alerts:
+  staff_permission: "ac.alerts"
+  delay_seconds: [5,10]
+punishments:
+  decision_delay_minutes: [2,7]
+logging:
+  detections_debug: true

@@ -20,11 +20,12 @@ public class AlertManager {
         long delay = 20L * (min + random.nextInt(Math.max(1, max - min + 1)));
         Bukkit.getScheduler().runTaskLaterAsynchronously(plugin, () -> {
             String message = plugin.getMessageManager().getMessage("alert")
-                    .replace("%player%", Bukkit.getOfflinePlayer(uuid).getName())
-                    .replace("%check%", check)
-                    .replace("%vl%", Integer.toString(vl));
+                    .replace("{player}", Bukkit.getOfflinePlayer(uuid).getName())
+                    .replace("{check}", check)
+                    .replace("{vl}", Integer.toString(vl));
+            String permission = plugin.getConfigManager().getAlertPermission();
             Bukkit.getOnlinePlayers().stream()
-                    .filter(p -> p.hasPermission("modernac.alert"))
+                    .filter(p -> p.hasPermission(permission))
                     .forEach(p -> p.sendMessage(message));
         }, delay);
     }
