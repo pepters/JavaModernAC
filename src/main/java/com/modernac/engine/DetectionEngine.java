@@ -96,6 +96,13 @@ public class DetectionEngine {
         plugin.getPunishmentManager().cancel(uuid);
     }
 
+    public void shutdown() {
+        for (UUID uuid : records.keySet()) {
+            plugin.getPunishmentManager().cancel(uuid);
+        }
+        records.clear();
+    }
+
     private static class PlayerRecord {
         final Map<String, FamilyRecord> families = new ConcurrentHashMap<>();
         PunishmentTier currentTier;

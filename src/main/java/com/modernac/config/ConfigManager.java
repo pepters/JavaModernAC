@@ -24,7 +24,9 @@ public class ConfigManager {
     }
 
     public double getTpsSoftGuard() {
-        return config.getDouble("latency.tps_soft_guard", 18.0);
+        return config.contains("latency.tps_soft_guard")
+                ? config.getDouble("latency.tps_soft_guard")
+                : 18.0D;
     }
 
     public boolean isExperimentalDetections() {
