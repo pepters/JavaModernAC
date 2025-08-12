@@ -4,6 +4,7 @@ import java.io.File;
 import java.util.logging.Logger;
 
 import org.bukkit.Server;
+import org.bukkit.command.PluginCommand;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.Plugin;
 
@@ -20,11 +21,15 @@ public class JavaPlugin implements Plugin {
 
     public FileConfiguration getConfig() { return config; }
 
+    public void reloadConfig() {}
+
     public File getDataFolder() { return new File("."); }
 
     public Server getServer() { return null; }
 
     public Logger getLogger() { return Logger.getLogger("JavaPlugin"); }
+
+    public PluginCommand getCommand(String name) { return new PluginCommand(); }
 
     public void onLoad() {}
     public void onEnable() {}

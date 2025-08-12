@@ -1,21 +1,23 @@
 package com.modernac.commands;
 
 import com.modernac.ModernACPlugin;
-import com.modernac.engine.AlertEngine;
 import com.modernac.util.TimeUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
-import org.bukkit.command.*;
-import org.bukkit.entity.Player;
 import org.bukkit.ChatColor;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandExecutor;
+import org.bukkit.command.CommandSender;
+import org.bukkit.command.TabCompleter;
+import org.bukkit.entity.Player;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.UUID;
 
 public class AcCommand implements CommandExecutor, TabCompleter {
     private final ModernACPlugin plugin;
+
     public AcCommand(ModernACPlugin plugin) {
         this.plugin = plugin;
     }
@@ -46,7 +48,7 @@ public class AcCommand implements CommandExecutor, TabCompleter {
                 if (target.isOnline()) {
                     ping = ((Player) target).getPing();
                 }
-                double tps = Bukkit.getServer().getTPS()[0];
+                double tps = Bukkit.getTPS()[0];
                 sender.sendMessage(ChatColor.YELLOW + "Status for " + target.getName() + ": ping " + ping + "ms, tps " + String.format("%.1f", tps));
                 return true;
             case "debug":

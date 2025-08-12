@@ -8,7 +8,7 @@ import org.bukkit.command.CommandSender;
 
 public interface Player extends CommandSender {
     UUID getUniqueId();
-    boolean hasPermission(String perm);
-    void sendMessage(String message);
+    String getName();
+    int getPing();
     AttributeInstance getAttribute(Attribute attribute);
 }
