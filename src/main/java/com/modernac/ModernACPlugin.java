@@ -12,7 +12,6 @@ import com.modernac.engine.DetectionEngine;
 import com.modernac.engine.AlertEngine;
 import com.modernac.commands.AcCommand;
 import io.github.retrooper.packetevents.PacketEvents;
-import io.github.retrooper.packetevents.manager.server.ServerVersion;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.Map;
@@ -35,10 +34,7 @@ public class ModernACPlugin extends JavaPlugin {
 
     @Override
     public void onLoad() {
-        PacketEvents.create(this).getSettings()
-                .fallbackServerVersion(ServerVersion.v1_16_5)
-                .checkForUpdates(false);
-        PacketEvents.get().load();
+        PacketEvents.create(this).load();
     }
 
     @Override

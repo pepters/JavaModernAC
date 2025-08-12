@@ -15,26 +15,22 @@
             <url>https://repo.papermc.io/repository/maven-public/</url>
         </repository>
         <repository>
-            <id>codemc-releases</id>
-            <url>https://repo.codemc.io/repository/maven-releases/</url>
-        </repository>
-        <repository>
-            <id>codemc-snapshots</id>
-            <url>https://repo.codemc.io/repository/maven-snapshots/</url>
+            <id>codemc-repo</id>
+            <url>https://repo.codemc.io/repository/maven-public/</url>
         </repository>
     </repositories>
     <dependencies>
-        <!-- PacketEvents v2 Spigot, plugin installed separately so provided -->
+        <!-- PacketEvents API, provided by external plugin -->
         <dependency>
             <groupId>com.github.retrooper</groupId>
-            <artifactId>packetevents-spigot</artifactId>
-            <version>2.9.4</version>
+            <artifactId>packetevents</artifactId>
+            <version>2.0.0</version>
             <scope>provided</scope>
         </dependency>
 
         <!-- Paper API 1.16.5 -->
         <dependency>
-            <groupId>com.destroystokyo.paper</groupId>
+            <groupId>io.papermc.paper</groupId>
             <artifactId>paper-api</artifactId>
             <version>1.16.5-R0.1-SNAPSHOT</version>
             <scope>provided</scope>
