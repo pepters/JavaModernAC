@@ -1,6 +1,30 @@
 name: ModernAC
-main: com.modernac.ModernACPlugin
+main: com.example.ac.AntiCheatPlugin
 version: 0.1.0
 api-version: 1.16
-depend: [packetevents]
-commands: {}
+softdepend: [PacketEvents, ViaVersion]
+commands:
+  ac:
+    description: AntiCheat main command
+    aliases: [anticheat]
+    permission: ac.use
+    usage: /ac <subcommand>
+permissions:
+  ac.use:
+    description: Allows use of /ac command
+    default: op
+  ac.alerts:
+    description: Receive anticheat alerts
+    default: op
+  ac.command.status:
+    description: Use /ac status
+    default: op
+  ac.command.debug:
+    description: Use /ac debug
+    default: op
+  ac.command.exempt:
+    description: Use /ac exempt
+    default: op
+  ac.command.reload:
+    description: Use /ac reload
+    default: op

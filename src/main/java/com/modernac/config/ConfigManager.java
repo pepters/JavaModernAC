@@ -69,6 +69,14 @@ public class ConfigManager {
         return getRange("alerts.delay_seconds", 5, 10)[1];
     }
 
+    public int getAlertRateLimit() {
+        return config.getInt("alerts.rate_limit_per_player_seconds", 3);
+    }
+
+    public int getAlertBatchWindow() {
+        return config.getInt("alerts.batch_window_seconds", 2);
+    }
+
     public int[] getTierDelaySeconds(PunishmentTier tier) {
         switch (tier) {
             case CRITICAL:
