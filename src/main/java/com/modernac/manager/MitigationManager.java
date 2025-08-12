@@ -25,7 +25,8 @@ public class MitigationManager {
     }
 
     public void mitigate(UUID uuid, int level) {
-        mitigated.put(uuid, level);
+        int clamped = Math.max(0, Math.min(100, level));
+        mitigated.put(uuid, clamped);
 
         // schedule application after random delay on main thread
         BukkitTask oldApply = applyTasks.remove(uuid);
@@ -59,13 +60,38 @@ public class MitigationManager {
 
     private void apply(UUID uuid) {
         Player player = Bukkit.getPlayer(uuid);
-        if (player == null) return;
+        if (player == null || !player.isOnline()) {
+            Bukkit.getScheduler().runTaskLater(plugin, () -> apply(uuid), 20L);
+            return;
+        }
         AttributeInstance attr = player.getAttribute(Attribute.GENERIC_ATTACK_DAMAGE);
-        if (attr == null) return;
+        if (attr == null) {
+            return;
+        }
         baseValues.computeIfAbsent(uuid, k -> attr.getBaseValue());
         double base = baseValues.get(uuid);
-        int level = mitigated.getOrDefault(uuid, 0);
-        double modifier = base * (1 - level / 100.0);
+        if (!Double.isFinite(base)) {
+            base = 1.0;
+        }
+        int level = Math.max(0, Math.min(100, mitigated.getOrDefault(uuid, 0)));
+        double max = plugin.getConfigManager().getMaxDamageReduction();
+        if (!Double.isFinite(max) || max < 0) max = 0;
+        if (max > 1) max = 1;
+        double modifier = base * (1 - (level / 100.0) * max);
         attr.setBaseValue(modifier);
+    }
+
+    public void reload() {
+        for (BukkitTask task : applyTasks.values()) {
+            task.cancel();
+        }
+        applyTasks.clear();
+        for (BukkitTask task : removeTasks.values()) {
+            task.cancel();
+        }
+        removeTasks.clear();
+        for (Map.Entry<UUID, Integer> entry : mitigated.entrySet()) {
+            mitigate(entry.getKey(), entry.getValue());
+        }
     }
 }

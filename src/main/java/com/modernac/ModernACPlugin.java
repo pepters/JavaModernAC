@@ -35,9 +35,10 @@ public class ModernACPlugin extends JavaPlugin {
 
     @Override
     public void onLoad() {
-        PacketEvents.get().getSettings()
+        PacketEvents.create(this).getSettings()
                 .fallbackServerVersion(ServerVersion.v1_16_5)
                 .checkForUpdates(false);
+        PacketEvents.get().load();
     }
 
     @Override
@@ -60,8 +61,12 @@ public class ModernACPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new PlayerListener(this), this);
 
         AcCommand ac = new AcCommand(this);
-        getCommand("ac").setExecutor(ac);
-        getCommand("ac").setTabCompleter(ac);
+        if (getCommand("ac") != null) {
+            getCommand("ac").setExecutor(ac);
+            getCommand("ac").setTabCompleter(ac);
+        } else {
+            getLogger().severe("/ac command not defined in plugin.yml");
+        }
 
         getLogger().info("ModernAC enabled.");
     }
@@ -76,6 +81,12 @@ public class ModernACPlugin extends JavaPlugin {
         }
         if (alertEngine != null) {
             alertEngine.shutdown();
+        }
+        if (punishmentManager != null) {
+            punishmentManager.reload();
+        }
+        if (mitigationManager != null) {
+            mitigationManager.reload();
         }
         PacketEvents.get().terminate();
         getLogger().info("ModernAC disabled.");
@@ -95,6 +106,9 @@ public class ModernACPlugin extends JavaPlugin {
         this.configManager = new ConfigManager(this);
         this.messageManager.reload();
         this.alertEngine.reload();
+        this.punishmentManager.reload();
+        this.mitigationManager.reload();
+        this.detectionEngine.reload();
     }
 
     public void exemptPlayer(UUID uuid, long durationMs) {

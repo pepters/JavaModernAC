@@ -4,6 +4,7 @@ import com.modernac.ModernACPlugin;
 import com.modernac.config.ConfigManager;
 import com.modernac.messages.MessageManager;
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 
@@ -66,6 +67,7 @@ public class AlertEngine {
                 .replace("{confidence}", Integer.toString((int) Math.round(detail.confidence * 100)))
                 .replace("{ping}", Integer.toString(detail.ping))
                 .replace("{tps}", String.format(Locale.US, "%.1f", detail.tps));
+        msg = ChatColor.translateAlternateColorCodes('&', msg);
         for (UUID sub : subs) {
             Player p = Bukkit.getPlayer(sub);
             if (p != null && p.isOnline()) {
@@ -131,6 +133,7 @@ public class AlertEngine {
                         .replace("{confidence}", Integer.toString((int) Math.round(conf)))
                         .replace("{ping}", Integer.toString(sample.ping))
                         .replace("{tps}", String.format(Locale.US, "%.1f", sample.tps));
+                msg = ChatColor.translateAlternateColorCodes('&', msg);
                 if (sample.soft) {
                     msg = "[soft] " + msg;
                 }
