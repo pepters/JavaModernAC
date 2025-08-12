@@ -1,0 +1,12 @@
+commands:
+  kick: "kick %player% Using disallowed modifications"
+  ban: "ban %player% Cheating"
+unstable_connection_limit: 1750
+experimental_detections: false
+combat_tolerance: NORMAL
+alert_delay_min: 5
+alert_delay_max: 10
+punishment_delay_min: 2
+punishment_delay_max: 7
+mitigation_duration_seconds: 60
+max_mitigation_reduction: 90
