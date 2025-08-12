@@ -11,7 +11,7 @@ import com.modernac.listener.PacketListenerImpl;
 import com.modernac.engine.DetectionEngine;
 import com.modernac.engine.AlertEngine;
 import com.modernac.commands.AcCommand;
-import io.github.retrooper.packetevents.PacketEvents;
+import com.github.retrooper.packetevents.PacketEvents;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.Map;
