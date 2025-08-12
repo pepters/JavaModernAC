@@ -76,6 +76,8 @@ checks_registry:
 alerts:
   staff_permission: "ac.alerts"
   delay_seconds: [5, 10]
+  rate_limit_per_player_seconds: 3
+  batch_window_seconds: 2
 
 logging:
   detections_debug: true

@@ -5,6 +5,8 @@ import com.modernac.checks.Check;
 import com.modernac.manager.PunishmentTier;
 import com.modernac.manager.MitigationManager;
 import com.modernac.config.ConfigManager;
+import com.modernac.engine.AlertEngine.AlertDetail;
+import org.bukkit.Bukkit;
 
 import java.util.EnumMap;
 import java.util.Map;
@@ -36,6 +38,9 @@ public class DetectionEngine {
             return;
         }
         UUID uuid = check.getUuid();
+        if (plugin.isExempt(uuid)) {
+            return;
+        }
         PlayerRecord record = records.computeIfAbsent(uuid, u -> new PlayerRecord());
         FamilyRecord fam = record.families.computeIfAbsent(result.getFamily(), f -> new FamilyRecord());
         double prev = fam.windowScores.getOrDefault(result.getWindow(), 0.0);
@@ -48,7 +53,10 @@ public class DetectionEngine {
             fam.tier = tier;
         }
         evaluate(uuid, record);
-        plugin.getAlertManager().alert(uuid, check.getName(), (int) Math.round(result.getEvidenceScore() * 100));
+        int ping = Bukkit.getPlayer(uuid) != null ? Bukkit.getPlayer(uuid).getPing() : 0;
+        double tps = Bukkit.getTPS()[0];
+        AlertDetail detail = new AlertDetail(result.getFamily(), result.getWindow().name(), result.getEvidenceScore(), ping, tps);
+        plugin.getAlertEngine().queueAlert(uuid, detail, false);
     }
 
     private void evaluate(UUID uuid, PlayerRecord record) {
