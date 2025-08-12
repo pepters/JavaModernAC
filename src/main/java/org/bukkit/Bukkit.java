@@ -8,9 +8,10 @@ import java.nio.charset.StandardCharsets;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitScheduler;
+import org.bukkit.scheduler.DummyBukkitScheduler;
 
 public class Bukkit {
-    private static final BukkitScheduler scheduler = new BukkitScheduler();
+    private static final BukkitScheduler scheduler = new DummyBukkitScheduler();
 
     public static BukkitScheduler getScheduler() { return scheduler; }
 
