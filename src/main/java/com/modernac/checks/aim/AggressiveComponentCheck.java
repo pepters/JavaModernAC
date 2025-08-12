@@ -1,6 +1,7 @@
 package com.modernac.checks.aim;
 
 import com.modernac.player.PlayerData;
+import com.modernac.player.RotationData;
 import com.modernac.logging.DebugLogger;
 import com.modernac.ModernACPlugin;
 
@@ -13,9 +14,13 @@ public class AggressiveComponentCheck extends AimCheck {
 
     @Override
     public void handle(Object packet) {
+        if (!(packet instanceof RotationData)) {
+            return;
+        }
+        RotationData rotation = (RotationData) packet;
         double threshold = 5 * plugin.getConfigManager().getCombatTolerance().getMultiplier();
         logger.log(data.getUuid() + " handled Aggressive Component");
-        if (Math.random() * 10 > threshold) {
+        if (Math.abs(rotation.getPitchChange()) > threshold) {
             fail(1, true);
         }
     }
