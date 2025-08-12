@@ -1,6 +1,7 @@
 package com.modernac.checks.aim;
 
 import com.modernac.player.PlayerData;
+import com.modernac.player.RotationData;
 import com.modernac.logging.DebugLogger;
 import com.modernac.ModernACPlugin;
 
@@ -11,9 +12,27 @@ public class AnalysisCheck extends AimCheck {
         this.logger = plugin.getDebugLogger();
     }
 
+    private int count;
+    private double sumYaw, sumSqYaw;
+
     @Override
     public void handle(Object packet) {
-        // TODO: Implement Analysis detection
+        if (!(packet instanceof RotationData)) {
+            return;
+        }
+        RotationData rot = (RotationData) packet;
         logger.log(data.getUuid() + " handled Analysis");
+        count++;
+        sumYaw += rot.getYawChange();
+        sumSqYaw += rot.getYawChange() * rot.getYawChange();
+        if (count >= 100) {
+            double mean = sumYaw / count;
+            double variance = (sumSqYaw / count) - (mean * mean);
+            if (variance < 0.05) {
+                fail(1, true);
+            }
+            count = 0;
+            sumYaw = sumSqYaw = 0;
+        }
     }
 }

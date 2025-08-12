@@ -1,6 +1,7 @@
 package com.modernac.checks.aim;
 
 import com.modernac.player.PlayerData;
+import com.modernac.player.RotationData;
 import com.modernac.logging.DebugLogger;
 import com.modernac.ModernACPlugin;
 
@@ -13,7 +14,14 @@ public class InvalidPitchCheck extends AimCheck {
 
     @Override
     public void handle(Object packet) {
-        // TODO: Implement Invalid pitch detection
+        if (!(packet instanceof RotationData)) {
+            return;
+        }
+        RotationData rot = (RotationData) packet;
         logger.log(data.getUuid() + " handled Invalid pitch");
+        double pitch = rot.getPitchChange();
+        if (pitch > 90 || pitch < -90) {
+            fail(1, true);
+        }
     }
 }

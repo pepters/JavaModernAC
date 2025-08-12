@@ -1,6 +1,7 @@
 package com.modernac.checks.aim;
 
 import com.modernac.player.PlayerData;
+import com.modernac.player.RotationData;
 import com.modernac.logging.DebugLogger;
 import com.modernac.ModernACPlugin;
 
@@ -11,9 +12,21 @@ public class SyncComponentCheck extends AimCheck {
         this.logger = plugin.getDebugLogger();
     }
 
+    private int streak;
+
     @Override
     public void handle(Object packet) {
-        // TODO: Implement Sync Component detection
+        if (!(packet instanceof RotationData)) {
+            return;
+        }
+        RotationData rot = (RotationData) packet;
         logger.log(data.getUuid() + " handled Sync Component");
+        if (Math.abs(Math.abs(rot.getYawChange()) - Math.abs(rot.getPitchChange())) < 0.1) {
+            if (++streak > 15) {
+                fail(1, true);
+            }
+        } else {
+            streak = 0;
+        }
     }
 }

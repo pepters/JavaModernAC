@@ -21,6 +21,7 @@ public class JavaPlugin {
 
     public Logger getLogger() { return Logger.getLogger("JavaPlugin"); }
 
+    public void onLoad() {}
     public void onEnable() {}
 
     public void onDisable() {}

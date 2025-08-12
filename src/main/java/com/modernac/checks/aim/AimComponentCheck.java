@@ -1,6 +1,7 @@
 package com.modernac.checks.aim;
 
 import com.modernac.player.PlayerData;
+import com.modernac.player.RotationData;
 import com.modernac.logging.DebugLogger;
 import com.modernac.ModernACPlugin;
 
@@ -11,9 +12,26 @@ public class AimComponentCheck extends AimCheck {
         this.logger = plugin.getDebugLogger();
     }
 
+    private double lastRatio;
+    private int streak;
+
     @Override
     public void handle(Object packet) {
-        // TODO: Implement Aim Component detection
+        if (!(packet instanceof RotationData)) {
+            return;
+        }
+        RotationData rot = (RotationData) packet;
         logger.log(data.getUuid() + " handled Aim Component");
+        if (rot.getPitchChange() != 0) {
+            double ratio = rot.getYawChange() / rot.getPitchChange();
+            if (Math.abs(ratio - lastRatio) < 0.005) {
+                if (++streak > 20) {
+                    fail(1, true);
+                }
+            } else {
+                streak = 0;
+            }
+            lastRatio = ratio;
+        }
     }
 }

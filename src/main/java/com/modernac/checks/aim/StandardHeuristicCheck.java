@@ -1,6 +1,7 @@
 package com.modernac.checks.aim;
 
 import com.modernac.player.PlayerData;
+import com.modernac.player.RotationData;
 import com.modernac.logging.DebugLogger;
 import com.modernac.ModernACPlugin;
 
@@ -13,7 +14,13 @@ public class StandardHeuristicCheck extends AimCheck {
 
     @Override
     public void handle(Object packet) {
-        // TODO: Implement Standard heuristic detection
+        if (!(packet instanceof RotationData)) {
+            return;
+        }
+        RotationData rot = (RotationData) packet;
         logger.log(data.getUuid() + " handled Standard heuristic");
+        if (Math.abs(rot.getYawChange()) > 90 && Math.abs(rot.getPitchChange()) < 1) {
+            fail(1, true);
+        }
     }
 }

@@ -1,6 +1,7 @@
 package com.modernac.checks.aim;
 
 import com.modernac.player.PlayerData;
+import com.modernac.player.RotationData;
 import com.modernac.logging.DebugLogger;
 import com.modernac.ModernACPlugin;
 
@@ -11,9 +12,18 @@ public class InterpolationFlawCheck extends AimCheck {
         this.logger = plugin.getDebugLogger();
     }
 
+    private double lastYaw;
+
     @Override
     public void handle(Object packet) {
-        // TODO: Implement Interpolation Flaw detection
+        if (!(packet instanceof RotationData)) {
+            return;
+        }
+        RotationData rot = (RotationData) packet;
         logger.log(data.getUuid() + " handled Interpolation Flaw");
+        if (lastYaw != 0 && Math.signum(lastYaw) != Math.signum(rot.getYawChange()) && Math.abs(lastYaw - rot.getYawChange()) > 30) {
+            fail(1, true);
+        }
+        lastYaw = rot.getYawChange();
     }
 }

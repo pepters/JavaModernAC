@@ -1,6 +1,7 @@
 package com.modernac.checks.aim;
 
 import com.modernac.player.PlayerData;
+import com.modernac.player.RotationData;
 import com.modernac.logging.DebugLogger;
 import com.modernac.ModernACPlugin;
 
@@ -11,9 +12,24 @@ public class PerfectEntropyCheck extends AimCheck {
         this.logger = plugin.getDebugLogger();
     }
 
+    private final java.util.Deque<Double> yawSamples = new java.util.ArrayDeque<>();
+
     @Override
     public void handle(Object packet) {
-        // TODO: Implement Perfect/Similar shannon entropy detection
+        if (!(packet instanceof RotationData)) {
+            return;
+        }
+        RotationData rot = (RotationData) packet;
         logger.log(data.getUuid() + " handled Perfect/Similar shannon entropy");
+        yawSamples.add(rot.getYawChange());
+        if (yawSamples.size() > 30) {
+            yawSamples.pollFirst();
+        }
+        if (yawSamples.size() == 30) {
+            long distinct = yawSamples.stream().distinct().count();
+            if (distinct <= 3) {
+                fail(1, true);
+            }
+        }
     }
 }

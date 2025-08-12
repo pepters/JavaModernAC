@@ -11,6 +11,11 @@ public class AutoTotemCheck extends Check {
 
     @Override
     public void handle(Object packet) {
-        // TODO: Autototem heuristic detection
+        if (!(packet instanceof String)) {
+            return;
+        }
+        if ("TOTEM_USE".equals(packet)) {
+            fail(1, false);
+        }
     }
 }

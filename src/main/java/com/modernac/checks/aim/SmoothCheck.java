@@ -1,6 +1,7 @@
 package com.modernac.checks.aim;
 
 import com.modernac.player.PlayerData;
+import com.modernac.player.RotationData;
 import com.modernac.logging.DebugLogger;
 import com.modernac.ModernACPlugin;
 
@@ -11,9 +12,24 @@ public class SmoothCheck extends AimCheck {
         this.logger = plugin.getDebugLogger();
     }
 
+    private double lastYaw, lastPitch;
+    private int streak;
+
     @Override
     public void handle(Object packet) {
-        // TODO: Implement Smooth detection
+        if (!(packet instanceof RotationData)) {
+            return;
+        }
+        RotationData rot = (RotationData) packet;
         logger.log(data.getUuid() + " handled Smooth");
+        if (Math.abs(rot.getYawChange() - lastYaw) < 0.01 && Math.abs(rot.getPitchChange() - lastPitch) < 0.01) {
+            if (++streak > 8) {
+                fail(1, true);
+            }
+        } else {
+            streak = 0;
+        }
+        lastYaw = rot.getYawChange();
+        lastPitch = rot.getPitchChange();
     }
 }
