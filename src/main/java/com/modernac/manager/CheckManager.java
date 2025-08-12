@@ -33,14 +33,14 @@ public class CheckManager {
         checks.remove(uuid);
     }
 
-    public void handle(UUID uuid, Object packet) {
+    public void handle(UUID uuid, Object data) {
         List<Check> list = checks.get(uuid);
         if (list == null) {
             return;
         }
         executor.execute(() -> {
             for (Check check : list) {
-                check.handle(packet);
+                check.handle(data);
             }
         });
     }

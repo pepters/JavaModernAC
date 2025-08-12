@@ -8,6 +8,7 @@ import com.modernac.manager.AlertManager;
 import com.modernac.manager.PunishmentManager;
 import com.modernac.messages.MessageManager;
 import com.modernac.listener.PlayerListener;
+import com.modernac.listener.CombatListener;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public class ModernACPlugin extends JavaPlugin {
@@ -34,6 +35,7 @@ public class ModernACPlugin extends JavaPlugin {
         this.mitigationManager = new MitigationManager(this);
 
         getServer().getPluginManager().registerEvents(new PlayerListener(this), this);
+        getServer().getPluginManager().registerEvents(new CombatListener(this), this);
 
         getLogger().info("ModernAC enabled.");
     }
