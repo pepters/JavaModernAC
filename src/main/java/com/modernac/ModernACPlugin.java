@@ -8,6 +8,8 @@ import com.modernac.manager.AlertManager;
 import com.modernac.manager.PunishmentManager;
 import com.modernac.messages.MessageManager;
 import com.modernac.listener.PlayerListener;
+import com.modernac.listener.PacketListener;
+import com.github.retrooper.packetevents.PacketEvents;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public class ModernACPlugin extends JavaPlugin {
@@ -20,6 +22,11 @@ public class ModernACPlugin extends JavaPlugin {
     private AlertManager alertManager;
     private PunishmentManager punishmentManager;
     private MitigationManager mitigationManager;
+
+    @Override
+    public void onLoad() {
+        PacketEvents.create(this).load();
+    }
 
     @Override
     public void onEnable() {
@@ -35,6 +42,9 @@ public class ModernACPlugin extends JavaPlugin {
 
         getServer().getPluginManager().registerEvents(new PlayerListener(this), this);
 
+        PacketEvents.getAPI().getEventManager().registerListener(new PacketListener(this));
+        PacketEvents.getAPI().init();
+
         getLogger().info("ModernAC enabled.");
     }
 
@@ -43,6 +53,7 @@ public class ModernACPlugin extends JavaPlugin {
         if (checkManager != null) {
             checkManager.shutdown();
         }
+        PacketEvents.getAPI().terminate();
         getLogger().info("ModernAC disabled.");
     }
 
