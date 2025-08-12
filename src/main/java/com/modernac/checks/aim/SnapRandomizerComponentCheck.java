@@ -1,6 +1,7 @@
 package com.modernac.checks.aim;
 
 import com.modernac.player.PlayerData;
+import com.modernac.player.RotationData;
 import com.modernac.logging.DebugLogger;
 import com.modernac.ModernACPlugin;
 
@@ -11,9 +12,21 @@ public class SnapRandomizerComponentCheck extends AimCheck {
         this.logger = plugin.getDebugLogger();
     }
 
+    private double lastYaw, lastPitch;
+
     @Override
     public void handle(Object packet) {
-        // TODO: Implement Snap/Randomizer Component detection
+        if (!(packet instanceof RotationData)) {
+            return;
+        }
+        RotationData rot = (RotationData) packet;
         logger.log(data.getUuid() + " handled Snap/Randomizer Component");
+        boolean small = Math.abs(lastYaw) < 1 && Math.abs(lastPitch) < 1;
+        boolean big = Math.abs(rot.getYawChange()) > 50 || Math.abs(rot.getPitchChange()) > 50;
+        if (small && big) {
+            fail(1, true);
+        }
+        lastYaw = rot.getYawChange();
+        lastPitch = rot.getPitchChange();
     }
 }

@@ -1,6 +1,7 @@
 package com.modernac.checks.aim;
 
 import com.modernac.player.PlayerData;
+import com.modernac.player.RotationData;
 import com.modernac.logging.DebugLogger;
 import com.modernac.ModernACPlugin;
 
@@ -11,9 +12,23 @@ public class ConstantRotationsTwoCheck extends AimCheck {
         this.logger = plugin.getDebugLogger();
     }
 
+    private double lastPitch;
+    private int streak;
+
     @Override
     public void handle(Object packet) {
-        // TODO: Implement Constant rotations 2 detection
+        if (!(packet instanceof RotationData)) {
+            return;
+        }
+        RotationData rot = (RotationData) packet;
         logger.log(data.getUuid() + " handled Constant rotations 2");
+        if (rot.getPitchChange() == lastPitch) {
+            if (++streak > 8) {
+                fail(1, true);
+            }
+        } else {
+            streak = 0;
+        }
+        lastPitch = rot.getPitchChange();
     }
 }

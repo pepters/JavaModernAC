@@ -1,6 +1,7 @@
 package com.modernac.checks.aim;
 
 import com.modernac.player.PlayerData;
+import com.modernac.player.RotationData;
 import com.modernac.logging.DebugLogger;
 import com.modernac.ModernACPlugin;
 
@@ -11,9 +12,23 @@ public class InconsistentZeroCheck extends AimCheck {
         this.logger = plugin.getDebugLogger();
     }
 
+    private int streak;
+
     @Override
     public void handle(Object packet) {
-        // TODO: Implement Inconsistent Zero detection
+        if (!(packet instanceof RotationData)) {
+            return;
+        }
+        RotationData rot = (RotationData) packet;
         logger.log(data.getUuid() + " handled Inconsistent Zero");
+        boolean inconsistent = (rot.getYawChange() == 0 && Math.abs(rot.getPitchChange()) > 1)
+                || (rot.getPitchChange() == 0 && Math.abs(rot.getYawChange()) > 1);
+        if (inconsistent) {
+            if (++streak > 3) {
+                fail(1, true);
+            }
+        } else {
+            streak = 0;
+        }
     }
 }

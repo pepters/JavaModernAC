@@ -1,6 +1,7 @@
 package com.modernac.checks.aim;
 
 import com.modernac.player.PlayerData;
+import com.modernac.player.RotationData;
 import com.modernac.logging.DebugLogger;
 import com.modernac.ModernACPlugin;
 
@@ -13,7 +14,15 @@ public class RandomizerFlawHeuristicCheck extends AimCheck {
 
     @Override
     public void handle(Object packet) {
-        // TODO: Implement Randomizer flaw Heuristic detection
+        if (!(packet instanceof RotationData)) {
+            return;
+        }
+        RotationData rot = (RotationData) packet;
         logger.log(data.getUuid() + " handled Randomizer flaw Heuristic");
+        double pitch = Math.abs(rot.getPitchChange());
+        double mod = pitch % 0.015625;
+        if (mod < 1e-6) {
+            fail(1, true);
+        }
     }
 }
