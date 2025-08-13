@@ -1,27 +1,43 @@
 # AGENTS.md — правила для генерации кода (Codex/агенты)
 
-Этот файл — «правила дорожного движения» для любых будущих задач по проекту **ModernAC**.
-Цель — исключить типовые поломки (вшитые заглушки, неверные координаты зависимостей, дубли слушателей, запуск Maven в оффлайне и пр.) и стабильно получать рабочие патчи.
+Этот файл — «правила дорожного движения» для задач по проекту **ModernAC**.
+Он минимизирует типовые поломки (ложные импорты PacketEvents, заглушки чужих пакетов,
+дубли слушателей, шум в логах, несоответствие форматеру и т. п.).
 
-## 0) TL;DR (золотые правила)
-1. **Никаких заглушек в чужих пакетах**: *запрещено* создавать исходники в `org.bukkit/**`, `net/md_5/**`, `io/github/retrooper/**`, `com/github/retrooper/**`. Эти пакеты принадлежат внешним библиотекам.
-2. **PacketEvents — внешний плагин**, не шейдить, **scope=provided**. Мы используем **PacketEvents v2.9.4** (spigot module) + **Paper API 1.16.5**.
-3. **Единые импорты PacketEvents**: `com.github.retrooper.packetevents.*` (API 2.9.x). Не переключать пакеты на `io.github...` и не миксовать.
-4. **Не запускать Maven/тесты** в оффлайн-среде агентов. Просто возвращай файлы.
-5. **Один пакет‑слушатель**: регистрируем только один `PacketListener`.
-6. **Вывод всегда**: только изменённые/новые файлы целиком, без объяснений и логов.
+> **Ключевой хотфикс (всегда применять, если увидели обратное):**
+> в `src/main/java/com/modernac/ModernACPlugin.java` **должен быть только один импорт билдера**
+> ```java
+> import io.github.retrooper.packetevents.factory.spigot.SpigotPacketEventsBuilder;
+> ```
+> Если встретился
+> `com.github.retrooper.packetevents.factory.spigot.SpigotPacketEventsBuilder` — **удалить**.
+> При этом остальные API‑импорты PacketEvents остаются `com.github.retrooper.packetevents.*` — это норма для 2.9.x.
 
 ---
 
-## 1) Среда и зависимости
-- **Java**: 17 (compile target 17).
-- **Сервер**: Paper 1.16.5.
-- **PacketEvents**: `com.github.retrooper:packetevents-spigot:2.9.4` (`scope: provided`).
-- **Paper API**: `com.destroystokyo.paper:paper-api:1.16.5-R0.1-SNAPSHOT` (`scope: provided`).
-- **Репозитории**:
-  - `papermc-repo`: `https://repo.papermc.io/repository/maven-public/`
-  - `codemc-releases`: `https://repo.codemc.io/repository/maven-releases/`
-  - `codemc-snapshots`: `https://repo.codemc.io/repository/maven-snapshots/`
+## 0) TL;DR (золотые правила)
+
+1. **Никаких исходников в чужих пакетах**: запрещено создавать файлы в
+   `org.bukkit/**`, `net/md_5/**`, `io/github/retrooper/**`, `com/github/retrooper/**`.
+   Эти пакеты принадлежат внешним библиотекам.
+2. **PacketEvents — внешний плагин**. Не шейдить. `scope: provided`. Используем линейку **2.9.x**.
+3. **Импорты PacketEvents**:  
+   • **API** — `com.github.retrooper.packetevents.*`  
+   • **Builder** — **только** `io.github.retrooper.packetevents.factory.spigot.SpigotPacketEventsBuilder`
+4. **Один слушатель пакетов**: регистрируется один `PacketListener`/`PacketListenerImpl`.
+5. **Без NMS/Reflection Mojang**. Только PacketEvents + Bukkit/Paper API.
+6. **Форматирование строго Spotless (google-java-format)**. Если правили код — прогоняйте `spotless:apply`.
+7. **Логирование**: в консоль — только алёрты/ошибки. Подробный trace детектов — **только в файл** через `DetectionLogger` и по настройкам (без спама).
+
+---
+
+## 1) Среда и совместимость
+
+- **Поддерживаемые сервера**: Paper/Purpur **1.16.5–1.21.4** (единый JAR).
+- **Java (compile)**: 17 (`maven-compiler-plugin` → `<release>17</release>`).  
+  **Runtime**: плагин работает и на серверах, запущенных на Java 21.
+- **PacketEvents**: `com.github.retrooper:packetevents-spigot:2.9.x` (`scope: provided`).
+- **Paper API для компиляции**: `1.16.5-R0.1-SNAPSHOT` (`scope: provided`).
 
 ### 1.1 POM — шаблон (использовать «как есть»)
 ```xml
@@ -37,6 +53,7 @@
   <properties>
     <maven.compiler.release>17</maven.compiler.release>
   </properties>
+
   <repositories>
     <repository>
       <id>papermc-repo</id>
@@ -51,6 +68,7 @@
       <url>https://repo.codemc.io/repository/maven-snapshots/</url>
     </repository>
   </repositories>
+
   <dependencies>
     <dependency>
       <groupId>com.github.retrooper</groupId>
@@ -65,22 +83,31 @@
       <scope>provided</scope>
     </dependency>
   </dependencies>
+
   <build>
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
         <version>3.11.0</version>
-        <configuration>
-          <release>17</release>
-        </configuration>
+        <configuration><release>17</release></configuration>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
         <version>3.2.5</version>
+        <configuration><skipTests>true</skipTests></configuration>
+      </plugin>
+      <!-- Spotless обязателен в CI -->
+      <plugin>
+        <groupId>com.diffplug.spotless</groupId>
+        <artifactId>spotless-maven-plugin</artifactId>
+        <version>2.43.0</version>
         <configuration>
-          <skipTests>true</skipTests>
+          <java>
+            <googleJavaFormat/>
+            <removeUnusedImports/>
+          </java>
         </configuration>
       </plugin>
     </plugins>
@@ -94,146 +121,107 @@ name: ModernAC
 main: com.modernac.ModernACPlugin
 version: 0.1.0
 api-version: 1.16
-# PacketEvents обязателен в рантайме
-depend: [packetevents]
-# ViaVersion опционален
-softdepend: [ViaVersion]
+depend: [packetevents]   # PacketEvents обязателен в рантайме
+softdepend: [ViaVersion] # опционально
 ```
 
 ---
 
-## 2) Код‑правила (обязательно)
-- **Импорты PacketEvents**: `com.github.retrooper.packetevents.*`.
-- **Bootstrap PacketEvents (2.9.x)**:
+## 2) PacketEvents 2.9.x — правильные импорты и bootstrap
+
+- **API‑импорты**: `com.github.retrooper.packetevents.*`
+- **Builder‑импорт (единственный корректный)**:
   ```java
-  import com.github.retrooper.packetevents.PacketEvents;
-  import com.github.retrooper.packetevents.manager.server.ServerVersion;
-
-  @Override public void onLoad() {
-    PacketEvents.getAPI().getSettings()
-        .fallbackServerVersion(ServerVersion.V_1_16_5)
-        .checkForUpdates(false);
-    PacketEvents.getAPI().load();
-  }
-  @Override public void onEnable() {
-    PacketEvents.getAPI().init();
-    PacketEvents.getAPI().getEventManager().registerListener(new PacketListenerImpl(this));
-  }
-  @Override public void onDisable() {
-    PacketEvents.getAPI().terminate();
-  }
+  import io.github.retrooper.packetevents.factory.spigot.SpigotPacketEventsBuilder;
   ```
-- **Один слушатель**: регистрируется лишь один `PacketListener` (или `PacketListenerImpl`, или `PacketBus` — не оба сразу).
-- **Никаких стубов**: не создавать исходники в пакетах внешних библиотек.
-- **Bukkit API**: использовать только для команд/сообщений/атрибутов; тяжёлые вычисления — не на main‑треде.
+
+### 2.1 Инициализация (канонический шаблон)
+```java
+import com.github.retrooper.packetevents.PacketEvents;
+import com.github.retrooper.packetevents.manager.server.ServerVersion;
+import io.github.retrooper.packetevents.factory.spigot.SpigotPacketEventsBuilder;
+
+@Override public void onLoad() {
+  // Строим API (если в проекте используется builder)
+  SpigotPacketEventsBuilder.build(this);
+  PacketEvents.getAPI().getSettings()
+      .fallbackServerVersion(ServerVersion.V_1_16_5)
+      .checkForUpdates(false);
+  PacketEvents.getAPI().load();
+}
+
+@Override public void onEnable() {
+  PacketEvents.getAPI().init();
+  PacketEvents.getAPI().getEventManager().registerListener(new PacketListenerImpl(this));
+}
+
+@Override public void onDisable() {
+  PacketEvents.getAPI().terminate();
+}
+```
+
+**Важно:** не шейдить PacketEvents в JAR плагина и не добавлять «заглушек» их пакетов в исходники.
 
 ---
 
-## 3) Формат ответов агента
-Всегда возвращай **только изменённые/новые файлы целиком**, без объяснений и логов. Примеры формулировок задач:
+## 3) Логирование и производительность
 
-### 3.1 «Правим только pom.xml»
-> Обнови зависимости и репозитории под PacketEvents 2.9.4 и Paper 1.16.5. Верни **только** `pom.xml`.
-
-### 3.2 «Удаляем заглушки пакетов»
-> Удали каталоги `src/main/java/org/bukkit/**` и `src/main/java/io/github/retrooper/**`. Ничего другого не меняй. Верни список удалённых файлов.
-
-### 3.3 «Единые импорты PE»
-> Пройди все `*.java` и замени импорты PacketEvents на `com.github.retrooper.packetevents.*`. Верни затронутые файлы целиком.
-
-### 3.4 «Один слушатель»
-> Оставь `PacketListenerImpl` как единственный слушатель; снимай регистрацию других. Верни изменённые файлы целиком.
+- **Console‑noise policy**: в консоль — старт/стоп, алёрты, ошибки. Детальный trace «handled …» — только в файл, управляется конфигом через `DetectionLogger`; поддерживается
+  выборочно per‑player для отладки.
+- **Файловый вывод** выполнять через единый асинхронный исполнитель; не блокировать тики.
+- **Spotless** обязателен. Разделяйте длинную конкатенацию строк по требованиям форматера
+  (или используйте `String.format`). Конец файла — ровно один LF.
+- **Окна/фичи**: в горячем пути — кольцевые буферы на примитивах, без бокса/временных коллекций.
 
 ---
 
-## 4) Самопроверка перед отдачей
-Агент обязан прогнать логические проверки (без запуска Maven):
+## 4) Политики детекта (резюме для задач)
+
+- **Multi‑window confirmation** оставляем. Для быстрого UX допускается ранний алёрт по короткому окну при высокой уверенности и «здоровых» ping/TPS; длинные окна — для повышения доверия (не блокируют).
+- **Уверенность** — числовая метрика (0..1 или 0..100). Группы `CRITICAL/HIGH/MEDIUM` не использовать в новой логике. Старые ключи в конфиге — поддерживать как deprecated (маппинг на числа).
+- **ElytraTarget** — единая проверка, помеченная experimental, по умолчанию выключена, без punish/mitigation; реализует lead‑lock и boost‑snap эвристики. `/ac info` и `messages.yml` — не менять.
+
+---
+
+## 5) Самопроверка перед отдачей (без запуска Maven)
 
 ```bash
-# 1) В исходниках нет чужих пакетов
+# 1) В исходниках НЕ должно быть пакетов чужих библиотек
 rg -n "^package (org\.bukkit|net\.md_5|io\.github\.retrooper|com\.github\.retrooper)(?=\.)" src/main/java || true
-# ожидается пусто
+# Ожидается пусто. Исключение: наши собственные пакеты com.modernac.
 
-# 2) Импорты PacketEvents едины
-rg -n "io\.github\.retrooper\.packetevents" src/main/java || true
-# ожидается пусто
 
-# 3) plugin.yml указывает правильный main и зависимости
+# 2) Импорты PacketEvents
+# 2.1 API всегда com.github...
+rg -n "import\s+io\.github\.retrooper\.packetevents\.(?!factory\.spigot\.SpigotPacketEventsBuilder)" src/main/java || true
+# Должно быть пусто (разрешаем только builder‑импорт).
+
+# 2.2 Допустимый builder‑импорт
+rg -n "import\s+io\.github\.retrooper\.packetevents\.factory\.spigot\.SpigotPacketEventsBuilder;" src/main/java
+
+# 3) plugin.yml указывает корректный main и зависимость на PacketEvents
 rg -n "^main: com\.modernac\.ModernACPlugin" src/main/resources/plugin.yml
 rg -n "^depend: \[packetevents\]" src/main/resources/plugin.yml
-
-# 4) jar не содержит чужих пакетов (локально, если сборка есть)
-# jar tf target/*.jar | rg "^(org/bukkit|net/md_5|io/github/retrooper|com/github/retrooper)/"
-```
-
-*(Если пункт 1 выдаёт строки в `src/main/java/com/modernac/...` — это нормально. Критично, если в исходниках есть **директории** чужих пакетов.)*
-
----
-
-## 5) Автозащита в CI (опционально, но полезно)
-Добавьте **Checkstyle** с простыми регэксп‑правилами, чтобы билд падал, если кто‑то снова положит исходники в запрещённые пакеты или использует «левые» импорты:
-
-`pom.xml` — plugin:
-```xml
-<plugin>
-  <groupId>org.apache.maven.plugins</groupId>
-  <artifactId>maven-checkstyle-plugin</artifactId>
-  <version>3.3.1</version>
-  <executions>
-    <execution>
-      <phase>validate</phase>
-      <goals><goal>check</goal></goals>
-      <configuration>
-        <configLocation>checkstyle.xml</configLocation>
-        <failOnViolation>true</failOnViolation>
-      </configuration>
-    </execution>
-  </executions>
-</plugin>
-```
-
-`checkstyle.xml` — минимум правил:
-```xml
-<!DOCTYPE module PUBLIC "-//Checkstyle//DTD Checkstyle Configuration 1.3//EN"
-  "https://checkstyle.org/dtds/configuration_1_3.dtd">
-<module name="Checker">
-  <module name="RegexpOnFilename">
-    <property name="format" value=".*/(org/bukkit|net/md_5|io/github/retrooper|com/github/retrooper)/.*"/>
-    <property name="message" value="Do NOT include sources from external packages in this repo."/>
-    <property name="illegalPattern" value="true"/>
-  </module>
-  <module name="RegexpMultiline">
-    <property name="format" value="^package (org\.bukkit|net\.md_5|io\.github\.retrooper|com\.github\.retrooper)\."/>
-    <property name="message" value="Forbidden package declaration in sources."/>
-    <property name="illegalPattern" value="true"/>
-  </module>
-  <module name="RegexpMultiline">
-    <property name="format" value="io\.github\.retrooper\.packetevents"/>
-    <property name="message" value="Use com.github.retrooper.packetevents imports for v2.9.x."/>
-    <property name="illegalPattern" value="true"/>
-  </module>
-</module>
 ```
 
 ---
 
 ## 6) Частые ошибки и как их избегать
-- **Не резолвится PacketEvents** → проверь координаты/репозитории (см. шаблон POM). Не меняй группу/артефакт на «похожую». Не добавляй источники пакетов в проект.
-- **`cannot find symbol` по PE классам** → где‑то остался импорт `io.github...` или в исходниках лежит заглушка. Пройди «Самопроверку перед отдачей».
-- **Два слушателя** → в `onEnable()` регистрируется только один. Удали лишний.
-- **Снова появились `org/bukkit/**` в JAR** → кто‑то добавил исходники в этот пакет. Проверь Checkstyle и жёстко удаляй такие файлы.
+
+- **Два импорт‑пути билдера**: кто‑то добавил и `io.github...`, и `com.github...`. Оставляем **только** `io.github...` для билдера.
+- **Не резолвится PacketEvents**: проверь координаты/репозитории (см. POM). Не добавляй исходники чужих пакетов.
+- **Два слушателя**: зарегистрирован только один `PacketListener`. Удали лишние регистрации.
+- **Шум в консоли**: все детальные `handled …` должны идти через `DetectionLogger` и уметь выключаться конфигом.
 
 ---
 
-## 7) Шаблон короткого задания (копируй при каждой новой правке)
-> **Задача:** Выполни правку X. **Никаких заглушек**. Не запускай Maven. Верни только изменённые файлы целиком.
-> **Ограничения:**
-> - POM строго по шаблону из `AGENTS.md` (PacketEvents 2.9.4, Paper 1.16.5, scope=provided, репозитории papermc/codemc).
-> - Импорты PacketEvents: `com.github.retrooper.packetevents.*`.
-> - В исходниках не должно быть пакетов `org.bukkit/**`, `net/md_5/**`, `io/github/retrooper/**`, `com/github/retrooper/**`.
-> - Регистрировать только **один** PacketListener.
+## 7) Шаблон короткого задания (копируй в Issues/PR)
 
----
-
-Держите этот файл в корне репозитория и ссылайтесь на него в PR/Issues. Это резко снижает шанс, что агент снова «подтянет PacketEvents как либу» или положит заглушки в проект.
-
+> **Задача:** Выполни правку X. Верни **только изменённые/новые файлы целиком**, без логов.  
+> **Ограничения:**  
+> • POM/репозитории — как в `AGENTS.md`. PacketEvents 2.9.x, `scope: provided`.  
+> • Импорты PacketEvents: API = `com.github...`, builder = `io.github...`.  
+> • В исходниках нет пакетов `org.bukkit/**`, `net/md_5/**`, `io/github/retrooper/**`, `com/github/retrooper/**`.  
+> • Регистрируется только один `PacketListener`.  
+> • Логирование — через `DetectionLogger`, без спама в консоль.  
+> • Spotless зелёный.
