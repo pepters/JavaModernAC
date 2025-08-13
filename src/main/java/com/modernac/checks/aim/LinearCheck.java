@@ -1,16 +1,13 @@
 package com.modernac.checks.aim;
 
 import com.modernac.ModernACPlugin;
-import com.modernac.logging.DebugLogger;
 import com.modernac.player.PlayerData;
 import com.modernac.player.RotationData;
 
 public class LinearCheck extends AimCheck {
-  private final DebugLogger logger;
 
   public LinearCheck(ModernACPlugin plugin, PlayerData data) {
     super(plugin, data, "Linear", false);
-    this.logger = plugin.getDebugLogger();
   }
 
   private double lastYaw, lastDiff;
@@ -22,7 +19,7 @@ public class LinearCheck extends AimCheck {
       return;
     }
     RotationData rot = (RotationData) packet;
-    logger.log(data.getUuid() + " handled Linear");
+    trace("handled Linear");
     double diff = rot.getYawChange() - lastYaw;
     if (Math.abs(diff - lastDiff) < 0.01) {
       if (++streak > 6) {

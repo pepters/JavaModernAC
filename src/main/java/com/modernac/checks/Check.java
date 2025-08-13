@@ -34,6 +34,10 @@ public abstract class Check {
     return data.addVl(amount);
   }
 
+  protected void trace(String msg) {
+    plugin.getDetectionLogger().trace(getUuid(), name, msg);
+  }
+
   protected void fail(int vl, boolean punishable) {
     plugin.getDetectionEngine().record(this, vl, punishable, experimental);
   }

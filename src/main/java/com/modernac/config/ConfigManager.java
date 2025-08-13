@@ -107,8 +107,32 @@ public class ConfigManager {
     return config.getDouble("mitigation.max_damage_reduction", 0.90D);
   }
 
-  public boolean isDetectionsDebug() {
-    return config.getBoolean("logging.detections_debug", false);
+  public boolean isTraceEnabled() {
+    return config.getBoolean("logging.detection_trace.enabled", false);
+  }
+
+  public boolean isTraceToConsole() {
+    return config.getBoolean("logging.detection_trace.to_console", false);
+  }
+
+  public boolean isTraceToFile() {
+    return config.getBoolean("logging.detection_trace.to_file", false);
+  }
+
+  public int getTraceSamplePerSecond() {
+    return config.getInt("logging.detection_trace.sample_per_second", 0);
+  }
+
+  public java.util.List<String> getTraceOnlyPlayers() {
+    return config.getStringList("logging.detection_trace.only_players");
+  }
+
+  public boolean isAlertLogToConsole() {
+    return config.getBoolean("logging.alerts.to_console", true);
+  }
+
+  public boolean isAlertLogToFile() {
+    return config.getBoolean("logging.alerts.to_file", true);
   }
 
   public int getMinFamiliesForBan() {

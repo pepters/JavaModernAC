@@ -1,16 +1,13 @@
 package com.modernac.checks.aim;
 
 import com.modernac.ModernACPlugin;
-import com.modernac.logging.DebugLogger;
 import com.modernac.player.PlayerData;
 import com.modernac.player.RotationData;
 
 public class RankCheck extends AimCheck {
-  private final DebugLogger logger;
 
   public RankCheck(ModernACPlugin plugin, PlayerData data) {
     super(plugin, data, "Rank", false);
-    this.logger = plugin.getDebugLogger();
   }
 
   private final java.util.Deque<Double> samples = new java.util.ArrayDeque<>();
@@ -21,7 +18,7 @@ public class RankCheck extends AimCheck {
       return;
     }
     RotationData rot = (RotationData) packet;
-    logger.log(data.getUuid() + " handled Rank");
+    trace("handled Rank");
     samples.add(rot.getYawChange());
     if (samples.size() > 50) {
       samples.pollFirst();
