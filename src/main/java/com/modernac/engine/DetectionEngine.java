@@ -52,14 +52,21 @@ public class DetectionEngine {
         if (tier.ordinal() < fam.tier.ordinal()) {
             fam.tier = tier;
         }
-        evaluate(uuid, record);
-        int ping = Bukkit.getPlayer(uuid) != null ? Bukkit.getPlayer(uuid).getPing() : 0;
-        double tps = Bukkit.getTPS()[0];
+        int ping = 0;
+        double tps = 20.0;
+        if (Bukkit.getPlayer(uuid) != null) {
+            ping = Bukkit.getPlayer(uuid).getPing();
+        }
+        double[] tpsArr = Bukkit.getTPS();
+        if (tpsArr.length > 0 && Double.isFinite(tpsArr[0])) {
+            tps = tpsArr[0];
+        }
+        boolean soft = evaluate(uuid, record, ping, tps);
         AlertDetail detail = new AlertDetail(result.getFamily(), result.getWindow().name(), result.getEvidenceScore(), ping, tps);
-        plugin.getAlertEngine().queueAlert(uuid, detail, false);
+        plugin.getAlertEngine().queueAlert(uuid, detail, soft);
     }
 
-    private void evaluate(UUID uuid, PlayerRecord record) {
+    private boolean evaluate(UUID uuid, PlayerRecord record, int ping, double tps) {
         ConfigManager cfg = plugin.getConfigManager();
         int requiredFamilies = cfg.getMinFamiliesForBan();
         boolean requireMultiWindow = cfg.isMultiWindowConfirmationRequired();
@@ -81,8 +88,19 @@ public class DetectionEngine {
         double avg = familyCount > 0 ? total / familyCount : 0.0;
         MitigationManager mit = plugin.getMitigationManager();
         double maxReduction = cfg.getMaxDamageReduction();
+        if (!Double.isFinite(maxReduction) || maxReduction < 0) maxReduction = 0;
+        if (maxReduction > 1) maxReduction = 1;
         int reduction = (int) Math.round(avg * maxReduction * 100);
         mit.mitigate(uuid, reduction);
+
+        boolean soft = ping > cfg.getUnstableConnectionLimit() || tps < cfg.getTpsSoftGuard();
+        if (soft && highest != null) {
+            if (highest == PunishmentTier.CRITICAL) {
+                highest = PunishmentTier.HIGH;
+            } else if (highest == PunishmentTier.HIGH) {
+                highest = PunishmentTier.MEDIUM;
+            }
+        }
 
         if (familyCount >= requiredFamilies && (!requireMultiWindow || windowCount >= 2) && highest != null && highest != PunishmentTier.EXPERIMENTAL) {
             record.currentTier = highest;
@@ -91,6 +109,7 @@ public class DetectionEngine {
             record.currentTier = null;
             plugin.getPunishmentManager().cancel(uuid);
         }
+        return soft;
     }
 
     public boolean isPunishable(UUID uuid, PunishmentTier tier) {
@@ -105,6 +124,13 @@ public class DetectionEngine {
     }
 
     public void shutdown() {
+        for (UUID uuid : records.keySet()) {
+            plugin.getPunishmentManager().cancel(uuid);
+        }
+        records.clear();
+    }
+
+    public void reload() {
         for (UUID uuid : records.keySet()) {
             plugin.getPunishmentManager().cancel(uuid);
         }
