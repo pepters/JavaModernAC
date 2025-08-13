@@ -108,8 +108,7 @@ public class AutoTotemDetection extends Check {
             + " E="
             + String.format(Locale.US, "%.2f", e));
     if (e >= 0.75) {
-      DetectionResult result =
-          new DetectionResult("AUTOTOTEM", e, Window.SHORT, true, true, true);
+      DetectionResult result = new DetectionResult("AUTOTOTEM", e, Window.SHORT, true, true, true);
       fail(result);
     }
   }
