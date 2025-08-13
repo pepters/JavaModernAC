@@ -1,16 +1,13 @@
 package com.modernac.checks.aim;
 
 import com.modernac.ModernACPlugin;
-import com.modernac.logging.DebugLogger;
 import com.modernac.player.PlayerData;
 import com.modernac.player.RotationData;
 
 public class LongTermAnalysisCheck extends AimCheck {
-  private final DebugLogger logger;
 
   public LongTermAnalysisCheck(ModernACPlugin plugin, PlayerData data) {
     super(plugin, data, "Long-term Analysis", false);
-    this.logger = plugin.getDebugLogger();
   }
 
   private int count;
@@ -22,7 +19,7 @@ public class LongTermAnalysisCheck extends AimCheck {
       return;
     }
     RotationData rot = (RotationData) packet;
-    logger.log(data.getUuid() + " handled Long-term Analysis");
+    trace("handled Long-term Analysis");
     count++;
     sumYaw += rot.getYawChange();
     sumSqYaw += rot.getYawChange() * rot.getYawChange();

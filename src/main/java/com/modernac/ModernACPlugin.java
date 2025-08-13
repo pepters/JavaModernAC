@@ -7,13 +7,13 @@ import com.modernac.engine.AlertEngine;
 import com.modernac.engine.DetectionEngine;
 import com.modernac.listener.PacketListenerImpl;
 import com.modernac.listener.PlayerListener;
-import com.modernac.logging.DebugLogger;
+import com.modernac.logging.DetectionLogger;
 import com.modernac.manager.CheckManager;
 import com.modernac.manager.ExemptManager;
 import com.modernac.manager.MitigationManager;
 import com.modernac.manager.PunishmentManager;
 import com.modernac.messages.MessageManager;
-import io.github.retrooper.packetevents.factory.spigot.SpigotPacketEventsBuilder;
+import com.github.retrooper.packetevents.factory.spigot.SpigotPacketEventsBuilder;
 import java.util.UUID;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -21,7 +21,7 @@ public class ModernACPlugin extends JavaPlugin {
 
   private ConfigManager configManager;
   private MessageManager messageManager;
-  private DebugLogger debugLogger;
+  private DetectionLogger detectionLogger;
 
   private CheckManager checkManager;
   private AlertEngine alertEngine;
@@ -43,7 +43,7 @@ public class ModernACPlugin extends JavaPlugin {
     saveDefaultConfig();
     this.configManager = new ConfigManager(this);
     this.messageManager = new MessageManager(this);
-    this.debugLogger = new DebugLogger(this);
+    this.detectionLogger = new DetectionLogger(this);
 
     this.checkManager = new CheckManager(this);
     this.alertEngine = new AlertEngine(this);
@@ -66,6 +66,7 @@ public class ModernACPlugin extends JavaPlugin {
       getLogger().severe("/ac command not defined in plugin.yml");
     }
 
+    detectionLogger.logStartup();
     getLogger().info("ModernAC enabled.");
   }
 
@@ -89,6 +90,9 @@ public class ModernACPlugin extends JavaPlugin {
     if (exemptManager != null) {
       exemptManager.save();
     }
+    if (detectionLogger != null) {
+      detectionLogger.shutdown();
+    }
     PacketEvents.getAPI().terminate();
     getLogger().info("ModernAC disabled.");
   }
@@ -101,8 +105,8 @@ public class ModernACPlugin extends JavaPlugin {
     return messageManager;
   }
 
-  public DebugLogger getDebugLogger() {
-    return debugLogger;
+  public DetectionLogger getDetectionLogger() {
+    return detectionLogger;
   }
 
   public CheckManager getCheckManager() {
@@ -133,6 +137,7 @@ public class ModernACPlugin extends JavaPlugin {
     reloadConfig();
     this.configManager = new ConfigManager(this);
     this.messageManager.reload();
+    this.detectionLogger.reload();
     this.alertEngine.reload();
     this.punishmentManager.reload();
     this.mitigationManager.reload();

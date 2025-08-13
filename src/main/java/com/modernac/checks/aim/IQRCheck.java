@@ -1,16 +1,13 @@
 package com.modernac.checks.aim;
 
 import com.modernac.ModernACPlugin;
-import com.modernac.logging.DebugLogger;
 import com.modernac.player.PlayerData;
 import com.modernac.player.RotationData;
 
 public class IQRCheck extends AimCheck {
-  private final DebugLogger logger;
 
   public IQRCheck(ModernACPlugin plugin, PlayerData data) {
     super(plugin, data, "IQR", false);
-    this.logger = plugin.getDebugLogger();
   }
 
   private final java.util.Deque<Double> lastYaw = new java.util.ArrayDeque<>();
@@ -21,7 +18,7 @@ public class IQRCheck extends AimCheck {
       return;
     }
     RotationData rot = (RotationData) packet;
-    logger.log(data.getUuid() + " handled IQR");
+    trace("handled IQR");
     lastYaw.add(rot.getYawChange());
     if (lastYaw.size() > 20) {
       lastYaw.pollFirst();
