@@ -61,7 +61,7 @@ public class DetectionEngine {
     }
     EvalOutcome outcome = evaluate(uuid, record, ping, tps);
     if (outcome.highest == PunishmentTier.HIGH || outcome.highest == PunishmentTier.CRITICAL) {
-      double conf = outcome.highest == PunishmentTier.CRITICAL ? 1.0 : 0.9;
+      double conf = (outcome.highest == PunishmentTier.CRITICAL) ? 1.0 : 0.9;
       AlertDetail detail = new AlertDetail(result.getFamily(), result.getWindow().name(), conf, ping, tps, outcome.highest, outcome.soft);
       plugin.getAlertEngine().enqueue(uuid, detail, outcome.highest == PunishmentTier.CRITICAL);
       plugin.getDetectionLogger().alert(uuid, detail.family, "window=" + detail.window + ", ping=" + ping + ", tps=" + String.format(Locale.US, "%.1f", tps));

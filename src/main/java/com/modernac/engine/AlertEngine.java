@@ -64,11 +64,11 @@ public class AlertEngine {
     }
     long now = System.currentTimeMillis();
     detail.created = now;
-    if (critical && criticalFirst.add(uuid)) {
-      detail.sendAfter = now;
-    } else {
-      detail.sendAfter = now + (delayMin + random.nextInt(Math.max(1, delayMax - delayMin + 1))) * 1000L;
-    }
+      if (critical && criticalFirst.add(uuid)) {
+        detail.sendAfter = now;
+      } else {
+        detail.sendAfter = now + ((delayMin + random.nextInt(Math.max(1, delayMax - delayMin + 1))) * 1000L);
+      }
     queues.computeIfAbsent(uuid, k -> Collections.synchronizedList(new ArrayList<>())).add(detail);
     sendDebug(uuid, detail);
   }

@@ -61,8 +61,7 @@ public class AcCommand implements CommandExecutor, TabCompleter {
         long punish = plugin.getPunishmentManager().getRemaining(target.getUniqueId());
         long mitigate = plugin.getMitigationManager().getRemaining(target.getUniqueId());
         long ttl = plugin.getExemptManager().getRemaining(target.getUniqueId());
-        com.modernac.engine.DetectionEngine.DetectionSummary sum =
-            plugin.getDetectionEngine().getSummary(target.getUniqueId());
+          com.modernac.engine.DetectionEngine.DetectionSummary sum = plugin.getDetectionEngine().getSummary(target.getUniqueId());
         boolean latencyOK = sum != null && sum.latencyOK;
         boolean stabilityOK = sum != null && sum.stabilityOK;
         double shortW = sum != null ? sum.shortWindow : 0.0;

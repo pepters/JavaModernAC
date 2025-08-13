@@ -27,8 +27,7 @@ public class LBTweenCheck extends AimCheck {
     yawDeltas.add(rot.getYawChange());
     if (yawDeltas.size() == 6) {
       double avg = yawDeltas.stream().mapToDouble(Double::doubleValue).average().orElse(0.0);
-      double variance =
-          yawDeltas.stream().mapToDouble(d -> (d - avg) * (d - avg)).sum() / yawDeltas.size();
+        double variance = yawDeltas.stream().mapToDouble(d -> (d - avg) * (d - avg)).sum() / yawDeltas.size();
       double std = Math.sqrt(variance);
       double ratioMax = 0.0;
       Double prev = null;
@@ -39,8 +38,7 @@ public class LBTweenCheck extends AimCheck {
         prev = d;
       }
       if (std < 0.01 && ratioMax < 0.02) {
-        DetectionResult result =
-            new DetectionResult("GEOMETRY", 0.9, Window.LONG, true, true, true);
+          DetectionResult result = new DetectionResult("GEOMETRY", 0.9, Window.LONG, true, true, true);
         fail(result);
       }
       yawDeltas.poll();
