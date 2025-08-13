@@ -12,7 +12,7 @@ import com.modernac.engine.DetectionEngine;
 import com.modernac.engine.AlertEngine;
 import com.modernac.commands.AcCommand;
 import com.github.retrooper.packetevents.PacketEvents;
-import com.github.retrooper.packetevents.factory.spigot.SpigotPacketEventsBuilder;
+import io.github.retrooper.packetevents.factory.spigot.SpigotPacketEventsBuilder;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import com.modernac.manager.ExemptManager;
