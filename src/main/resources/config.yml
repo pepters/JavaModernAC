@@ -83,6 +83,15 @@ logging:
   detections_debug: true
   include_reason_vectors: true
   fpr_guard_summary: true
+  detection_trace:
+    enabled: false
+    to_console: false
+    to_file: false
+    sample_per_second: 0
+    only_players: []
+  alerts:
+    to_console: true
+    to_file: true
 
 fpr_guard:
   enable: true

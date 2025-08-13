@@ -1,16 +1,13 @@
 package com.modernac.checks.aim;
 
 import com.modernac.ModernACPlugin;
-import com.modernac.logging.DebugLogger;
 import com.modernac.player.PlayerData;
 import com.modernac.player.RotationData;
 
 public class PatternStatisticsCheck extends AimCheck {
-  private final DebugLogger logger;
 
   public PatternStatisticsCheck(ModernACPlugin plugin, PlayerData data) {
     super(plugin, data, "Pattern Statistics", false);
-    this.logger = plugin.getDebugLogger();
   }
 
   private final java.util.Deque<Double> lastYaw = new java.util.ArrayDeque<>();
@@ -21,7 +18,7 @@ public class PatternStatisticsCheck extends AimCheck {
       return;
     }
     RotationData rot = (RotationData) packet;
-    logger.log(data.getUuid() + " handled Pattern Statistics");
+    trace("handled Pattern Statistics");
     lastYaw.add(rot.getYawChange());
     if (lastYaw.size() > 6) {
       lastYaw.pollFirst();

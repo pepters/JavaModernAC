@@ -29,16 +29,25 @@ public class AcCommand implements CommandExecutor, TabCompleter {
     }
     String sub = args[0].toLowerCase();
     switch (sub) {
+      case "info":
       case "status":
-        if (!sender.hasPermission("ac.command.status")) {
+      case "inspect":
+        boolean deprecated = !sub.equals("info");
+        if (!sender.hasPermission("ac.command.info")
+            && !sender.hasPermission("ac.alerts")
+            && !sender.hasPermission("ac.command.status")) {
           sender.sendMessage(plugin.getMessageManager().getMessage("commands.no_permission"));
           return true;
         }
-        if (args.length < 2) {
+        OfflinePlayer target;
+        if (args.length >= 2) {
+          target = Bukkit.getOfflinePlayer(args[1]);
+        } else if (sender instanceof Player) {
+          target = (Player) sender;
+        } else {
           sender.sendMessage(plugin.getMessageManager().getMessage("commands.usage"));
           return true;
         }
-        OfflinePlayer target = Bukkit.getOfflinePlayer(args[1]);
         if (target == null || (target.getName() == null && !target.isOnline())) {
           sender.sendMessage(plugin.getMessageManager().getMessage("commands.player_not_found"));
           return true;
@@ -48,18 +57,51 @@ public class AcCommand implements CommandExecutor, TabCompleter {
           ping = ((Player) target).getPing();
         }
         double tps = Bukkit.getTPS()[0];
+        long punish = plugin.getPunishmentManager().getRemaining(target.getUniqueId());
+        long mitigate = plugin.getMitigationManager().getRemaining(target.getUniqueId());
         long ttl = plugin.getExemptManager().getRemaining(target.getUniqueId());
-        String ttlStr = ttl > 0 ? TimeUtil.formatDuration(ttl) : "none";
-        sender.sendMessage(
+        com.modernac.engine.DetectionEngine.DetectionSummary sum =
+            plugin.getDetectionEngine().getSummary(target.getUniqueId());
+        boolean latencyOK = sum != null && sum.latencyOK;
+        boolean stabilityOK = sum != null && sum.stabilityOK;
+        double shortW = sum != null ? sum.shortWindow : 0.0;
+        double longW = sum != null ? sum.longWindow : 0.0;
+        double veryLongW = sum != null ? sum.veryLongWindow : 0.0;
+        String msgInfo =
             ChatColor.YELLOW
-                + "Status for "
+                + "Info for "
                 + target.getName()
                 + ": ping "
                 + ping
                 + "ms, tps "
                 + String.format("%.1f", tps)
-                + ", exempt TTL "
-                + ttlStr);
+                + ", latencyOK="
+                + latencyOK
+                + ", stabilityOK="
+                + stabilityOK
+                + ", max25="
+                + String.format("%.2f", shortW)
+                + ", max100="
+                + String.format("%.2f", longW)
+                + ", max1000="
+                + String.format("%.2f", veryLongW)
+                + ", punish="
+                + TimeUtil.formatDuration(punish)
+                + ", mitigation="
+                + TimeUtil.formatDuration(mitigate)
+                + ", exempt="
+                + TimeUtil.formatDuration(ttl);
+        sender.sendMessage(msgInfo);
+        boolean tracing = plugin.getDetectionLogger().isTracing(target.getUniqueId());
+        sender.sendMessage(
+            ChatColor.YELLOW
+                + "Detection trace: "
+                + (tracing ? "on" : "off")
+                + " for "
+                + target.getName());
+        if (deprecated) {
+          sender.sendMessage(ChatColor.RED + "Deprecated → use /ac info");
+        }
         return true;
       case "debug":
         if (!sender.hasPermission("ac.command.debug")) {
@@ -83,6 +125,7 @@ public class AcCommand implements CommandExecutor, TabCompleter {
             plugin
                 .getAlertEngine()
                 .toggleDebug(((Player) sender).getUniqueId(), target.getUniqueId());
+        plugin.getDetectionLogger().setDebug(target.getUniqueId(), enabled);
         sender.sendMessage(
             ChatColor.GREEN
                 + "Debug "
@@ -122,58 +165,6 @@ public class AcCommand implements CommandExecutor, TabCompleter {
         plugin.reload();
         sender.sendMessage(plugin.getMessageManager().getMessage("commands.reloaded"));
         return true;
-      case "inspect":
-        if (!sender.hasPermission("ac.alerts")) {
-          sender.sendMessage(plugin.getMessageManager().getMessage("commands.no_permission"));
-          return true;
-        }
-        if (args.length < 2) {
-          sender.sendMessage(plugin.getMessageManager().getMessage("commands.usage"));
-          return true;
-        }
-        target = Bukkit.getOfflinePlayer(args[1]);
-        if (target == null || (target.getName() == null && !target.isOnline())) {
-          sender.sendMessage(plugin.getMessageManager().getMessage("commands.player_not_found"));
-          return true;
-        }
-        ping = 0;
-        if (target.isOnline()) {
-          ping = ((Player) target).getPing();
-        }
-        tps = Bukkit.getTPS()[0];
-        long punish = plugin.getPunishmentManager().getRemaining(target.getUniqueId());
-        long mitigate = plugin.getMitigationManager().getRemaining(target.getUniqueId());
-        ttl = plugin.getExemptManager().getRemaining(target.getUniqueId());
-        com.modernac.engine.DetectionEngine.DetectionSummary sum =
-            plugin.getDetectionEngine().getSummary(target.getUniqueId());
-        boolean latencyOK = sum != null && sum.latencyOK;
-        boolean stabilityOK = sum != null && sum.stabilityOK;
-        String msgInspect =
-            ChatColor.YELLOW
-                + "Inspect "
-                + target.getName()
-                + ": ping "
-                + ping
-                + "ms, tps "
-                + String.format("%.1f", tps)
-                + ", latencyOK="
-                + latencyOK
-                + ", stabilityOK="
-                + stabilityOK
-                + ", short="
-                + String.format("%.2f", sum != null ? sum.shortWindow : 0.0)
-                + ", long="
-                + String.format("%.2f", sum != null ? sum.longWindow : 0.0)
-                + ", veryLong="
-                + String.format("%.2f", sum != null ? sum.veryLongWindow : 0.0)
-                + ", punish="
-                + TimeUtil.formatDuration(punish)
-                + ", mitigation="
-                + TimeUtil.formatDuration(mitigate)
-                + ", exempt="
-                + TimeUtil.formatDuration(ttl);
-        sender.sendMessage(msgInspect);
-        return true;
       case "devfake":
         if (args.length < 2) {
           sender.sendMessage(plugin.getMessageManager().getMessage("commands.usage"));
@@ -203,10 +194,11 @@ public class AcCommand implements CommandExecutor, TabCompleter {
   public List<String> onTabComplete(
       CommandSender sender, Command command, String alias, String[] args) {
     if (args.length == 1) {
-      return Arrays.asList("status", "debug", "exempt", "reload", "inspect", "devfake");
+      return Arrays.asList("info", "status", "inspect", "debug", "exempt", "reload", "devfake");
     }
     if (args.length == 2
-        && (args[0].equalsIgnoreCase("status")
+        && (args[0].equalsIgnoreCase("info")
+            || args[0].equalsIgnoreCase("status")
             || args[0].equalsIgnoreCase("debug")
             || args[0].equalsIgnoreCase("exempt")
             || args[0].equalsIgnoreCase("inspect")

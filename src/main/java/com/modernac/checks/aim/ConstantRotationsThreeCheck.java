@@ -1,16 +1,13 @@
 package com.modernac.checks.aim;
 
 import com.modernac.ModernACPlugin;
-import com.modernac.logging.DebugLogger;
 import com.modernac.player.PlayerData;
 import com.modernac.player.RotationData;
 
 public class ConstantRotationsThreeCheck extends AimCheck {
-  private final DebugLogger logger;
 
   public ConstantRotationsThreeCheck(ModernACPlugin plugin, PlayerData data) {
     super(plugin, data, "Constant rotations 3", false);
-    this.logger = plugin.getDebugLogger();
   }
 
   private double lastYaw, lastPitch;
@@ -22,7 +19,7 @@ public class ConstantRotationsThreeCheck extends AimCheck {
       return;
     }
     RotationData rot = (RotationData) packet;
-    logger.log(data.getUuid() + " handled Constant rotations 3");
+    trace("handled Constant rotations 3");
     if (rot.getYawChange() == lastYaw && rot.getPitchChange() == lastPitch) {
       if (++streak > 6) {
         fail(1, true);

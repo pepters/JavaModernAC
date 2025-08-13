@@ -35,18 +35,6 @@ public class AlertEngine {
       Bukkit.getScheduler().cancelTask(taskId);
     }
     taskId = Bukkit.getScheduler().scheduleSyncRepeatingTask(plugin, this::flush, 10L, 10L);
-    plugin
-        .getLogger()
-        .info(
-            "AlertEngine: started (delay="
-                + delayMin
-                + "-"
-                + delayMax
-                + "s, batch="
-                + batchWindow
-                + "s, rate="
-                + rateLimit
-                + "s)");
   }
 
   public void shutdown() {
@@ -153,6 +141,19 @@ public class AlertEngine {
         if (sample.soft) {
           msg = "[soft] " + msg;
         }
+        plugin
+            .getDetectionLogger()
+            .alert(
+                playerId,
+                families,
+                "windows="
+                    + windows
+                    + ", conf="
+                    + String.format(Locale.US, "%.1f", conf)
+                    + ", ping="
+                    + sample.ping
+                    + ", tps="
+                    + String.format(Locale.US, "%.1f", sample.tps));
         for (Player staff : Bukkit.getOnlinePlayers()) {
           if (staff.hasPermission(perm)) {
             staff.sendMessage(msg);
