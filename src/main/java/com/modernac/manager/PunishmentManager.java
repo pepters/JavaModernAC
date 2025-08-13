@@ -36,20 +36,7 @@ public class PunishmentManager {
     long delaySeconds = min + random.nextInt(Math.max(1, max - min + 1));
     long runAt = System.currentTimeMillis() + delaySeconds * 1000L;
     long delayTicks = delaySeconds * 20L;
-      BukkitTask task = Bukkit.getScheduler().runTaskLater(
-          plugin,
-          () -> {
-                  tasks.remove(uuid);
-                  activeTier.remove(uuid);
-                  expires.remove(uuid);
-                  if (plugin.getDetectionEngine().isPunishable(uuid, tier)) {
-                    OfflinePlayer op = Bukkit.getOfflinePlayer(uuid);
-                    String name = Optional.ofNullable(op.getName()).orElse(uuid.toString());
-                      String command = plugin.getConfigManager().getBanCommand().replace("{player}", name);
-                    Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command);
-                  }
-                },
-                delayTicks);
+    BukkitTask task = Bukkit.getScheduler().runTaskLater(plugin, () -> { tasks.remove(uuid); activeTier.remove(uuid); expires.remove(uuid); if (plugin.getDetectionEngine().isPunishable(uuid, tier)) { OfflinePlayer op = Bukkit.getOfflinePlayer(uuid); String name = Optional.ofNullable(op.getName()).orElse(uuid.toString()); String command = plugin.getConfigManager().getBanCommand().replace("{player}", name); Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command); } }, delayTicks);
     tasks.put(uuid, task);
     activeTier.put(uuid, tier);
     expires.put(uuid, runAt);

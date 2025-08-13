@@ -67,7 +67,7 @@ public class AlertEngine {
       if (critical && criticalFirst.add(uuid)) {
         detail.sendAfter = now;
       } else {
-        detail.sendAfter = now + ((delayMin + random.nextInt(Math.max(1, delayMax - delayMin + 1))) * 1000L);
+        detail.sendAfter = now + (delayMin + random.nextInt(Math.max(1, delayMax - delayMin + 1))) * 1000L;
       }
     queues.computeIfAbsent(uuid, k -> Collections.synchronizedList(new ArrayList<>())).add(detail);
     sendDebug(uuid, detail);
@@ -77,13 +77,7 @@ public class AlertEngine {
     Set<UUID> subs = debugSubs.get(target);
     if (subs == null) return;
     MessageManager mm = plugin.getMessageManager();
-    String msg =
-        mm.getMessage("alerts.debug_format")
-            .replace("{player}", getName(target))
-            .replace("{families}", detail.family)
-            .replace("{confidence}", Integer.toString((int) Math.round(detail.confidence * 100)))
-            .replace("{ping}", Integer.toString(detail.ping))
-            .replace("{tps}", String.format(Locale.US, "%.1f", detail.tps));
+    String msg = mm.getMessage("alerts.debug_format").replace("{player}", getName(target)).replace("{families}", detail.family).replace("{confidence}", Integer.toString((int) Math.round(detail.confidence * 100))).replace("{ping}", Integer.toString(detail.ping)).replace("{tps}", String.format(Locale.US, "%.1f", detail.tps));
     msg = ChatColor.translateAlternateColorCodes('&', msg);
     for (UUID sub : subs) {
       Player p = Bukkit.getPlayer(sub);
@@ -154,14 +148,7 @@ public class AlertEngine {
         String windows = batch.stream().map(a -> a.window).distinct().collect(Collectors.joining(", "));
         double conf = batch.stream().mapToDouble(a -> a.confidence).max().orElse(0.0) * 100.0;
         AlertDetail sample = batch.get(batch.size() - 1);
-        String msg =
-            mm.getMessage("alerts.staff_format")
-                .replace("{player}", getName(playerId))
-                .replace("{families}", families)
-                .replace("{windows}", windows)
-                .replace("{confidence}", Integer.toString((int) Math.round(conf)))
-                .replace("{ping}", Integer.toString(sample.ping))
-                .replace("{tps}", String.format(Locale.US, "%.1f", sample.tps));
+        String msg = mm.getMessage("alerts.staff_format").replace("{player}", getName(playerId)).replace("{families}", families).replace("{windows}", windows).replace("{confidence}", Integer.toString((int) Math.round(conf))).replace("{ping}", Integer.toString(sample.ping)).replace("{tps}", String.format(Locale.US, "%.1f", sample.tps));
         msg = ChatColor.translateAlternateColorCodes('&', msg);
         if (sample.soft) {
           msg = "[soft] " + msg;

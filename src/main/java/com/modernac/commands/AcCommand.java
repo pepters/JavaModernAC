@@ -61,44 +61,16 @@ public class AcCommand implements CommandExecutor, TabCompleter {
         long punish = plugin.getPunishmentManager().getRemaining(target.getUniqueId());
         long mitigate = plugin.getMitigationManager().getRemaining(target.getUniqueId());
         long ttl = plugin.getExemptManager().getRemaining(target.getUniqueId());
-          com.modernac.engine.DetectionEngine.DetectionSummary sum = plugin.getDetectionEngine().getSummary(target.getUniqueId());
+        com.modernac.engine.DetectionEngine.DetectionSummary sum = plugin.getDetectionEngine().getSummary(target.getUniqueId());
         boolean latencyOK = sum != null && sum.latencyOK;
         boolean stabilityOK = sum != null && sum.stabilityOK;
         double shortW = sum != null ? sum.shortWindow : 0.0;
         double longW = sum != null ? sum.longWindow : 0.0;
         double veryLongW = sum != null ? sum.veryLongWindow : 0.0;
-        String msgInfo =
-            ChatColor.YELLOW
-                + "Info for "
-                + target.getName()
-                + ": ping "
-                + ping
-                + "ms, tps "
-                + String.format("%.1f", tps)
-                + ", latencyOK="
-                + latencyOK
-                + ", stabilityOK="
-                + stabilityOK
-                + ", max25="
-                + String.format("%.2f", shortW)
-                + ", max100="
-                + String.format("%.2f", longW)
-                + ", max1000="
-                + String.format("%.2f", veryLongW)
-                + ", punish="
-                + TimeUtil.formatDuration(punish)
-                + ", mitigation="
-                + TimeUtil.formatDuration(mitigate)
-                + ", exempt="
-                + TimeUtil.formatDuration(ttl);
+        String msgInfo = ChatColor.YELLOW + "Info for " + target.getName() + ": ping " + ping + "ms, tps " + String.format("%.1f", tps) + ", latencyOK=" + latencyOK + ", stabilityOK=" + stabilityOK + ", max25=" + String.format("%.2f", shortW) + ", max100=" + String.format("%.2f", longW) + ", max1000=" + String.format("%.2f", veryLongW) + ", punish=" + TimeUtil.formatDuration(punish) + ", mitigation=" + TimeUtil.formatDuration(mitigate) + ", exempt=" + TimeUtil.formatDuration(ttl);
         sender.sendMessage(msgInfo);
         boolean tracing = plugin.getDetectionLogger().isTracing(target.getUniqueId());
-        sender.sendMessage(
-            ChatColor.YELLOW
-                + "Detection trace: "
-                + (tracing ? "on" : "off")
-                + " for "
-                + target.getName());
+        sender.sendMessage(ChatColor.YELLOW + "Detection trace: " + (tracing ? "on" : "off") + " for " + target.getName());
         if (deprecated) {
           sender.sendMessage(ChatColor.RED + "Deprecated → use /ac info");
         }
@@ -121,17 +93,9 @@ public class AcCommand implements CommandExecutor, TabCompleter {
           sender.sendMessage(plugin.getMessageManager().getMessage("commands.player_not_found"));
           return true;
         }
-        boolean enabled =
-            plugin
-                .getAlertEngine()
-                .toggleDebug(((Player) sender).getUniqueId(), target.getUniqueId());
+        boolean enabled = plugin.getAlertEngine().toggleDebug(((Player) sender).getUniqueId(), target.getUniqueId());
         plugin.getDetectionLogger().setDebug(target.getUniqueId(), enabled);
-        sender.sendMessage(
-            ChatColor.GREEN
-                + "Debug "
-                + (enabled ? "enabled" : "disabled")
-                + " for "
-                + target.getName());
+        sender.sendMessage(ChatColor.GREEN + "Debug " + (enabled ? "enabled" : "disabled") + " for " + target.getName());
         return true;
       case "exempt":
         if (!sender.hasPermission("ac.command.exempt")) {
@@ -149,12 +113,7 @@ public class AcCommand implements CommandExecutor, TabCompleter {
         }
         long duration = TimeUtil.parseTime(args[2]);
         plugin.exemptPlayer(target.getUniqueId(), duration);
-        String msg =
-            plugin
-                .getMessageManager()
-                .getMessage("commands.exempt_set")
-                .replace("{player}", target.getName())
-                .replace("{time}", args[2]);
+        String msg = plugin.getMessageManager().getMessage("commands.exempt_set").replace("{player}", target.getName()).replace("{time}", args[2]);
         sender.sendMessage(msg);
         return true;
       case "reload":
@@ -175,13 +134,7 @@ public class AcCommand implements CommandExecutor, TabCompleter {
           sender.sendMessage(plugin.getMessageManager().getMessage("commands.player_not_found"));
           return true;
         }
-        plugin
-            .getAlertEngine()
-            .enqueue(
-                target.getUniqueId(),
-                new com.modernac.engine.AlertEngine.AlertDetail(
-                    "DEV", "SHORT", 1.0, 0, Bukkit.getTPS()[0], PunishmentTier.HIGH, false),
-                false);
+        plugin.getAlertEngine().enqueue(target.getUniqueId(), new com.modernac.engine.AlertEngine.AlertDetail("DEV", "SHORT", 1.0, 0, Bukkit.getTPS()[0], PunishmentTier.HIGH, false), false);
         sender.sendMessage(ChatColor.GREEN + "Dev alert queued for " + target.getName());
         return true;
       default:

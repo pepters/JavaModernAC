@@ -34,7 +34,7 @@ public class MitigationManager {
     int applyMin = plugin.getConfigManager().getMitigationApplyDelayMin();
     int applyMax = plugin.getConfigManager().getMitigationApplyDelayMax();
     long applyDelay = 20L * (applyMin + random.nextInt(Math.max(1, applyMax - applyMin + 1)));
-      BukkitTask applyTask = Bukkit.getScheduler().runTaskLater(plugin, () -> apply(uuid), applyDelay);
+    BukkitTask applyTask = Bukkit.getScheduler().runTaskLater(plugin, () -> apply(uuid), applyDelay);
     applyTasks.put(uuid, applyTask);
 
     // schedule removal after configured duration range and restore base value
@@ -44,22 +44,7 @@ public class MitigationManager {
     int durMax = plugin.getConfigManager().getMitigationDurationMax();
     long duration = 20L * (durMin + random.nextInt(Math.max(1, durMax - durMin + 1)));
     long removeAt = System.currentTimeMillis() + duration * 50L;
-      BukkitTask removeTask = Bukkit.getScheduler().runTaskLater(
-          plugin,
-          () -> {
-                  mitigated.remove(uuid);
-                  Double base = baseValues.remove(uuid);
-                  Player player = Bukkit.getPlayer(uuid);
-                  if (player != null) {
-                    AttributeInstance attr = player.getAttribute(Attribute.GENERIC_ATTACK_DAMAGE);
-                    if (attr != null && base != null) {
-                      attr.setBaseValue(base);
-                    }
-                  }
-                  removeTasks.remove(uuid);
-                  removeExpires.remove(uuid);
-                },
-                duration);
+    BukkitTask removeTask = Bukkit.getScheduler().runTaskLater(plugin, () -> { mitigated.remove(uuid); Double base = baseValues.remove(uuid); Player player = Bukkit.getPlayer(uuid); if (player != null) { AttributeInstance attr = player.getAttribute(Attribute.GENERIC_ATTACK_DAMAGE); if (attr != null && base != null) { attr.setBaseValue(base); } } removeTasks.remove(uuid); removeExpires.remove(uuid); }, duration);
     removeTasks.put(uuid, removeTask);
     removeExpires.put(uuid, removeAt);
   }

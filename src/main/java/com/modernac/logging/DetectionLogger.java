@@ -147,7 +147,7 @@ public class DetectionLogger {
 
   public void logStartup() {
     String players = traceOnly.isEmpty() ? "all" : String.join(",", traceOnly);
-    plugin.getLogger().info(("Logging: trace[enabled=" + traceEnabled + ", file=" + traceToFile + ", sample=" + traceSample + ", players=" + players + "] alerts[console=" + alertsToConsole + ", file=" + alertsToFile + "]"));
+    plugin.getLogger().info("Logging: trace[enabled=" + traceEnabled + ", file=" + traceToFile + ", sample=" + traceSample + ", players=" + players + "] alerts[console=" + alertsToConsole + ", file=" + alertsToFile + "]");
   }
 
   private void writeAsync(File file, String line) {
