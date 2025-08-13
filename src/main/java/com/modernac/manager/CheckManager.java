@@ -3,6 +3,7 @@ package com.modernac.manager;
 import com.modernac.ModernACPlugin;
 import com.modernac.checks.Check;
 import com.modernac.checks.aim.AimCheckFactory;
+import com.modernac.checks.combat.CombatCheckFactory;
 import com.modernac.checks.latency.LatencyCheckFactory;
 import com.modernac.checks.misc.MiscCheckFactory;
 import com.modernac.checks.signatures.SignatureCheckFactory;
@@ -29,6 +30,7 @@ public class CheckManager {
     List<Check> list = new ArrayList<>(AimCheckFactory.build(plugin, data));
     list.addAll(SignatureCheckFactory.build(plugin, data));
     list.addAll(LatencyCheckFactory.build(plugin, data));
+    list.addAll(CombatCheckFactory.build(plugin, data));
     list.addAll(MiscCheckFactory.build(plugin, data));
     checks.put(uuid, list);
   }

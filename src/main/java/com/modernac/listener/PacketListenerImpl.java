@@ -4,9 +4,12 @@ import com.github.retrooper.packetevents.event.SimplePacketListenerAbstract;
 import com.github.retrooper.packetevents.event.simple.PacketPlayReceiveEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientInteractEntity;
+import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPlayerDigging;
+import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientClickWindow;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPlayerPositionAndRotation;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPlayerRotation;
 import com.modernac.ModernACPlugin;
+import com.modernac.checks.combat.AutoTotemDetection.OffhandSwapEvent;
 import com.modernac.manager.CheckManager;
 import com.modernac.player.RotationData;
 import java.util.Map;
@@ -45,6 +48,21 @@ public class PacketListenerImpl extends SimplePacketListenerAbstract {
       if (action == WrapperPlayClientInteractEntity.InteractAction.ATTACK) {
         manager.handle(uuid, "ATTACK");
       }
+      return;
+    }
+    if (type == PacketType.Play.Client.PLAYER_DIGGING) {
+      var w = new WrapperPlayClientPlayerDigging(event);
+      if (w.getAction() == WrapperPlayClientPlayerDigging.Action.SWAP_ITEM_WITH_OFFHAND) {
+        manager.handle(uuid, new OffhandSwapEvent());
+      }
+      return;
+    }
+    if (type == PacketType.Play.Client.CLICK_WINDOW) {
+      var w = new WrapperPlayClientClickWindow(event);
+      if (w.getSlot() == 45) {
+        manager.handle(uuid, new OffhandSwapEvent());
+      }
+      return;
     }
   }
 
