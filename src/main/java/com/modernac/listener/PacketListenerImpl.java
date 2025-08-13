@@ -8,6 +8,7 @@ import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPl
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientClickWindow;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPlayerPositionAndRotation;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPlayerRotation;
+import com.github.retrooper.packetevents.protocol.player.DiggingAction;
 import com.modernac.ModernACPlugin;
 import com.modernac.checks.combat.AutoTotemDetection.OffhandSwapEvent;
 import com.modernac.manager.CheckManager;
@@ -52,7 +53,7 @@ public class PacketListenerImpl extends SimplePacketListenerAbstract {
     }
     if (type == PacketType.Play.Client.PLAYER_DIGGING) {
       var w = new WrapperPlayClientPlayerDigging(event);
-      if (w.getAction() == WrapperPlayClientPlayerDigging.Action.SWAP_ITEM_WITH_OFFHAND) {
+      if (w.getAction() == DiggingAction.SWAP_ITEM_WITH_OFFHAND) {
         manager.handle(uuid, new OffhandSwapEvent());
       }
       return;
