@@ -137,6 +137,39 @@ public class DetectionEngine {
         records.clear();
     }
 
+    public DetectionSummary getSummary(UUID uuid) {
+        PlayerRecord record = records.get(uuid);
+        if (record == null) return null;
+        double shortMax = 0.0;
+        double longMax = 0.0;
+        double veryLongMax = 0.0;
+        boolean latencyOK = true;
+        boolean stabilityOK = true;
+        for (FamilyRecord fam : record.families.values()) {
+            shortMax = Math.max(shortMax, fam.windowScores.getOrDefault(Window.SHORT, 0.0));
+            longMax = Math.max(longMax, fam.windowScores.getOrDefault(Window.LONG, 0.0));
+            veryLongMax = Math.max(veryLongMax, fam.windowScores.getOrDefault(Window.VERY_LONG, 0.0));
+            latencyOK &= fam.latencyOK;
+            stabilityOK &= fam.stabilityOK;
+        }
+        return new DetectionSummary(latencyOK, stabilityOK, shortMax, longMax, veryLongMax);
+    }
+
+    public static class DetectionSummary {
+        public final boolean latencyOK;
+        public final boolean stabilityOK;
+        public final double shortWindow;
+        public final double longWindow;
+        public final double veryLongWindow;
+        public DetectionSummary(boolean latencyOK, boolean stabilityOK, double shortWindow, double longWindow, double veryLongWindow) {
+            this.latencyOK = latencyOK;
+            this.stabilityOK = stabilityOK;
+            this.shortWindow = shortWindow;
+            this.longWindow = longWindow;
+            this.veryLongWindow = veryLongWindow;
+        }
+    }
+
     private static class PlayerRecord {
         final Map<String, FamilyRecord> families = new ConcurrentHashMap<>();
         PunishmentTier currentTier;

@@ -12,12 +12,11 @@ import com.modernac.engine.DetectionEngine;
 import com.modernac.engine.AlertEngine;
 import com.modernac.commands.AcCommand;
 import com.github.retrooper.packetevents.PacketEvents;
-import io.github.retrooper.packetevents.factory.spigot.SpigotPacketEventsBuilder;
+import com.github.retrooper.packetevents.factory.spigot.SpigotPacketEventsBuilder;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import java.util.Map;
+import com.modernac.manager.ExemptManager;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 
 public class ModernACPlugin extends JavaPlugin {
 
@@ -30,7 +29,7 @@ public class ModernACPlugin extends JavaPlugin {
     private PunishmentManager punishmentManager;
     private MitigationManager mitigationManager;
     private DetectionEngine detectionEngine;
-    private final Map<UUID, Long> exemptions = new ConcurrentHashMap<>();
+    private ExemptManager exemptManager;
 
     @Override
     public void onLoad() {
@@ -52,6 +51,7 @@ public class ModernACPlugin extends JavaPlugin {
         this.punishmentManager = new PunishmentManager(this);
         this.mitigationManager = new MitigationManager(this);
         this.detectionEngine = new DetectionEngine(this);
+        this.exemptManager = new ExemptManager(this);
 
         PacketEvents.getAPI().init();
         // Регистрируем 2.9.x слушатель
@@ -87,6 +87,9 @@ public class ModernACPlugin extends JavaPlugin {
         if (mitigationManager != null) {
             mitigationManager.reload();
         }
+        if (exemptManager != null) {
+            exemptManager.save();
+        }
         PacketEvents.getAPI().terminate();
         getLogger().info("ModernAC disabled.");
     }
@@ -99,6 +102,7 @@ public class ModernACPlugin extends JavaPlugin {
     public PunishmentManager getPunishmentManager() { return punishmentManager; }
     public MitigationManager getMitigationManager() { return mitigationManager; }
     public DetectionEngine getDetectionEngine() { return detectionEngine; }
+    public ExemptManager getExemptManager() { return exemptManager; }
 
     public void reload() {
         reloadConfig();
@@ -108,19 +112,14 @@ public class ModernACPlugin extends JavaPlugin {
         this.punishmentManager.reload();
         this.mitigationManager.reload();
         this.detectionEngine.reload();
+        this.exemptManager.load();
     }
 
     public void exemptPlayer(UUID uuid, long durationMs) {
-        exemptions.put(uuid, System.currentTimeMillis() + durationMs);
+        exemptManager.exemptPlayer(uuid, durationMs);
     }
 
     public boolean isExempt(UUID uuid) {
-        Long expire = exemptions.get(uuid);
-        if (expire == null) return false;
-        if (expire < System.currentTimeMillis()) {
-            exemptions.remove(uuid);
-            return false;
-        }
-        return true;
+        return exemptManager.isExempt(uuid);
     }
 }

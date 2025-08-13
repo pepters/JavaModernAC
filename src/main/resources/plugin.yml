@@ -1,6 +1,6 @@
 name: ModernAC
 main: com.modernac.ModernACPlugin
-version: 0.1.0
+version: ${project.version}
 api-version: 1.16
 # PacketEvents обязателен в рантайме
 depend: [packetevents]
@@ -10,7 +10,7 @@ commands:
     description: AntiCheat main command
     aliases: [anticheat]
     permission: ac.use
-    usage: /ac <subcommand>
+    usage: /ac <status|debug|exempt|reload|devfake|inspect>
 permissions:
   ac.use:
     description: Allows use of /ac command

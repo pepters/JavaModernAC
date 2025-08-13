@@ -25,4 +25,17 @@ public final class TimeUtil {
             return 0L;
         }
     }
+
+    public static String formatDuration(long ms) {
+        if (ms <= 0) return "0s";
+        long sec = ms / 1000;
+        long h = sec / 3600;
+        long m = (sec % 3600) / 60;
+        long s = sec % 60;
+        StringBuilder sb = new StringBuilder();
+        if (h > 0) sb.append(h).append("h");
+        if (m > 0) sb.append(m).append("m");
+        if (s > 0 || sb.length() == 0) sb.append(s).append("s");
+        return sb.toString();
+    }
 }

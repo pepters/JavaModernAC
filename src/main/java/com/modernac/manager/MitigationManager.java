@@ -18,6 +18,7 @@ public class MitigationManager {
     private final Map<UUID, Double> baseValues = new ConcurrentHashMap<>();
     private final Map<UUID, BukkitTask> applyTasks = new ConcurrentHashMap<>();
     private final Map<UUID, BukkitTask> removeTasks = new ConcurrentHashMap<>();
+    private final Map<UUID, Long> removeExpires = new ConcurrentHashMap<>();
     private final Random random = new Random();
 
     public MitigationManager(ModernACPlugin plugin) {
@@ -43,6 +44,7 @@ public class MitigationManager {
         int durMin = plugin.getConfigManager().getMitigationDurationMin();
         int durMax = plugin.getConfigManager().getMitigationDurationMax();
         long duration = 20L * (durMin + random.nextInt(Math.max(1, durMax - durMin + 1)));
+        long removeAt = System.currentTimeMillis() + duration * 50L;
         BukkitTask removeTask = Bukkit.getScheduler().runTaskLater(plugin, () -> {
             mitigated.remove(uuid);
             Double base = baseValues.remove(uuid);
@@ -54,8 +56,10 @@ public class MitigationManager {
                 }
             }
             removeTasks.remove(uuid);
+            removeExpires.remove(uuid);
         }, duration);
         removeTasks.put(uuid, removeTask);
+        removeExpires.put(uuid, removeAt);
     }
 
     private void apply(UUID uuid) {
@@ -90,8 +94,16 @@ public class MitigationManager {
             task.cancel();
         }
         removeTasks.clear();
+        removeExpires.clear();
         for (Map.Entry<UUID, Integer> entry : mitigated.entrySet()) {
             mitigate(entry.getKey(), entry.getValue());
         }
+    }
+
+    public long getRemaining(UUID uuid) {
+        Long exp = removeExpires.get(uuid);
+        if (exp == null) return 0L;
+        long diff = exp - System.currentTimeMillis();
+        return Math.max(0L, diff);
     }
 }

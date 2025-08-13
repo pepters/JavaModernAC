@@ -77,7 +77,7 @@ public class AlertEngine {
     }
 
     public boolean toggleDebug(UUID sender, UUID target) {
-        Set<UUID> set = debugSubs.computeIfAbsent(target, k -> new HashSet<>());
+        Set<UUID> set = debugSubs.computeIfAbsent(target, k -> ConcurrentHashMap.newKeySet());
         if (set.contains(sender)) {
             set.remove(sender);
             if (set.isEmpty()) debugSubs.remove(target);

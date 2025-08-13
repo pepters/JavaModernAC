@@ -49,7 +49,9 @@ public class AcCommand implements CommandExecutor, TabCompleter {
                     ping = ((Player) target).getPing();
                 }
                 double tps = Bukkit.getTPS()[0];
-                sender.sendMessage(ChatColor.YELLOW + "Status for " + target.getName() + ": ping " + ping + "ms, tps " + String.format("%.1f", tps));
+                long ttl = plugin.getExemptManager().getRemaining(target.getUniqueId());
+                String ttlStr = ttl > 0 ? TimeUtil.formatDuration(ttl) : "none";
+                sender.sendMessage(ChatColor.YELLOW + "Status for " + target.getName() + ": ping " + ping + "ms, tps " + String.format("%.1f", tps) + ", exempt TTL " + ttlStr);
                 return true;
             case "debug":
                 if (!sender.hasPermission("ac.command.debug")) {
@@ -101,6 +103,54 @@ public class AcCommand implements CommandExecutor, TabCompleter {
                 plugin.reload();
                 sender.sendMessage(plugin.getMessageManager().getMessage("commands.reloaded"));
                 return true;
+            case "inspect":
+                if (!sender.hasPermission("ac.alerts")) {
+                    sender.sendMessage(plugin.getMessageManager().getMessage("commands.no_permission"));
+                    return true;
+                }
+                if (args.length < 2) {
+                    sender.sendMessage(plugin.getMessageManager().getMessage("commands.usage"));
+                    return true;
+                }
+                target = Bukkit.getOfflinePlayer(args[1]);
+                if (target == null || (target.getName() == null && !target.isOnline())) {
+                    sender.sendMessage(plugin.getMessageManager().getMessage("commands.player_not_found"));
+                    return true;
+                }
+                ping = 0;
+                if (target.isOnline()) {
+                    ping = ((Player) target).getPing();
+                }
+                tps = Bukkit.getTPS()[0];
+                long punish = plugin.getPunishmentManager().getRemaining(target.getUniqueId());
+                long mitigate = plugin.getMitigationManager().getRemaining(target.getUniqueId());
+                ttl = plugin.getExemptManager().getRemaining(target.getUniqueId());
+                com.modernac.engine.DetectionEngine.DetectionSummary sum = plugin.getDetectionEngine().getSummary(target.getUniqueId());
+                boolean latencyOK = sum != null && sum.latencyOK;
+                boolean stabilityOK = sum != null && sum.stabilityOK;
+                String msgInspect = ChatColor.YELLOW + "Inspect " + target.getName() + ": ping " + ping + "ms, tps " + String.format("%.1f", tps)
+                        + ", latencyOK=" + latencyOK + ", stabilityOK=" + stabilityOK
+                        + ", short=" + String.format("%.2f", sum != null ? sum.shortWindow : 0.0)
+                        + ", long=" + String.format("%.2f", sum != null ? sum.longWindow : 0.0)
+                        + ", veryLong=" + String.format("%.2f", sum != null ? sum.veryLongWindow : 0.0)
+                        + ", punish=" + TimeUtil.formatDuration(punish)
+                        + ", mitigation=" + TimeUtil.formatDuration(mitigate)
+                        + ", exempt=" + TimeUtil.formatDuration(ttl);
+                sender.sendMessage(msgInspect);
+                return true;
+            case "devfake":
+                if (args.length < 2) {
+                    sender.sendMessage(plugin.getMessageManager().getMessage("commands.usage"));
+                    return true;
+                }
+                target = Bukkit.getOfflinePlayer(args[1]);
+                if (target == null || (target.getName() == null && !target.isOnline())) {
+                    sender.sendMessage(plugin.getMessageManager().getMessage("commands.player_not_found"));
+                    return true;
+                }
+                plugin.getAlertEngine().queueAlert(target.getUniqueId(), new com.modernac.engine.AlertEngine.AlertDetail("DEV", "SHORT", 1.0, 0, Bukkit.getTPS()[0]), false);
+                sender.sendMessage(ChatColor.GREEN + "Dev alert queued for " + target.getName());
+                return true;
             default:
                 sender.sendMessage(plugin.getMessageManager().getMessage("commands.usage"));
                 return true;
@@ -110,9 +160,9 @@ public class AcCommand implements CommandExecutor, TabCompleter {
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         if (args.length == 1) {
-            return Arrays.asList("status", "debug", "exempt", "reload");
+            return Arrays.asList("status", "debug", "exempt", "reload", "inspect", "devfake");
         }
-        if (args.length == 2 && (args[0].equalsIgnoreCase("status") || args[0].equalsIgnoreCase("debug") || args[0].equalsIgnoreCase("exempt"))) {
+        if (args.length == 2 && (args[0].equalsIgnoreCase("status") || args[0].equalsIgnoreCase("debug") || args[0].equalsIgnoreCase("exempt") || args[0].equalsIgnoreCase("inspect") || args[0].equalsIgnoreCase("devfake"))) {
             List<String> names = new ArrayList<>();
             for (Player p : Bukkit.getOnlinePlayers()) {
                 names.add(p.getName());

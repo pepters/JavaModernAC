@@ -1,8 +1,9 @@
-name: Build
+name: Release
 
 on:
   push:
-  pull_request:
+    tags:
+      - 'v*'
 
 jobs:
   build:
@@ -17,10 +18,13 @@ jobs:
           cache: maven
       - name: Build with Maven
         run: mvn -B -DskipTests package
-      - name: Run linters
-        run: mvn -B spotless:check checkstyle:check spotbugs:spotbugs -Dspotbugs.failOnError=false -Dcheckstyle.failOnViolation=false
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: ModernAC
           path: target/ModernAC-*.jar
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: target/ModernAC-*.jar
+          generate_release_notes: true

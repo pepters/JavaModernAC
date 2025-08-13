@@ -19,6 +19,7 @@ public class PunishmentManager {
     private final Random random = new Random();
     private final Map<UUID, BukkitTask> tasks = new ConcurrentHashMap<>();
     private final Map<UUID, PunishmentTier> activeTier = new ConcurrentHashMap<>();
+    private final Map<UUID, Long> expires = new ConcurrentHashMap<>();
 
     public PunishmentManager(ModernACPlugin plugin) {
         this.plugin = plugin;
@@ -35,19 +36,23 @@ public class PunishmentManager {
         int[] range = plugin.getConfigManager().getTierDelaySeconds(tier);
         int min = range[0];
         int max = range[1];
-        long delay = 20L * (min + random.nextInt(Math.max(1, max - min + 1)));
+        long delaySeconds = min + random.nextInt(Math.max(1, max - min + 1));
+        long runAt = System.currentTimeMillis() + delaySeconds * 1000L;
+        long delayTicks = delaySeconds * 20L;
         BukkitTask task = Bukkit.getScheduler().runTaskLater(plugin, () -> {
             tasks.remove(uuid);
             activeTier.remove(uuid);
+            expires.remove(uuid);
             if (plugin.getDetectionEngine().isPunishable(uuid, tier)) {
                 OfflinePlayer op = Bukkit.getOfflinePlayer(uuid);
                 String name = Optional.ofNullable(op.getName()).orElse(uuid.toString());
                 String command = plugin.getConfigManager().getBanCommand().replace("{player}", name);
                 Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command);
             }
-        }, delay);
+        }, delayTicks);
         tasks.put(uuid, task);
         activeTier.put(uuid, tier);
+        expires.put(uuid, runAt);
     }
 
     public void cancel(UUID uuid) {
@@ -56,6 +61,7 @@ public class PunishmentManager {
             task.cancel();
         }
         activeTier.remove(uuid);
+        expires.remove(uuid);
     }
 
     public void reload() {
@@ -64,6 +70,14 @@ public class PunishmentManager {
         }
         tasks.clear();
         activeTier.clear();
+        expires.clear();
+    }
+
+    public long getRemaining(UUID uuid) {
+        Long exp = expires.get(uuid);
+        if (exp == null) return 0L;
+        long diff = exp - System.currentTimeMillis();
+        return Math.max(0L, diff);
     }
 }
 
