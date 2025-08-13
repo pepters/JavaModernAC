@@ -36,11 +36,7 @@ public class RankLongTermCheck extends AimCheck {
     double tps = tpsArr.length > 0 && Double.isFinite(tpsArr[0]) ? tpsArr[0] : 20.0;
     int ping = player != null ? player.getPing() : 0;
     if (ping > 180 || tps < 18.0) {
-      trace(
-          "gate-fail ping="
-              + ping
-              + ", tps="
-              + String.format(Locale.US, "%.1f", tps));
+      trace("gate-fail ping=" + ping + ", tps=" + String.format(Locale.US, "%.1f", tps));
       return;
     }
     synchronized (samples) {

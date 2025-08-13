@@ -116,8 +116,7 @@ public class DetectionLogger {
       }
     }
 
-    String line =
-        format.format(new Date()) + " [" + getName(uuid) + "] " + detector + " - " + message;
+    String line = format.format(new Date()) + " [" + getName(uuid) + "] " + detector + " - " + message;
 
     if (debug || traceToFile) {
       writeAsync(traceFile, line);
@@ -125,8 +124,7 @@ public class DetectionLogger {
   }
 
   public void alert(UUID uuid, String detector, String message) {
-    String line =
-        format.format(new Date()) + " [" + getName(uuid) + "] " + detector + " - " + message;
+    String line = format.format(new Date()) + " [" + getName(uuid) + "] " + detector + " - " + message;
     if (alertsToFile) {
       writeAsync(alertFile, line);
     }
@@ -149,22 +147,7 @@ public class DetectionLogger {
 
   public void logStartup() {
     String players = traceOnly.isEmpty() ? "all" : String.join(",", traceOnly);
-    plugin
-        .getLogger()
-        .info(
-            "Logging: trace[enabled="
-                + traceEnabled
-                + ", file="
-                + traceToFile
-                + ", sample="
-                + traceSample
-                + ", players="
-                + players
-                + "] alerts[console="
-                + alertsToConsole
-                + ", file="
-                + alertsToFile
-                + "]");
+    plugin.getLogger().info("Logging: trace[enabled=" + traceEnabled + ", file=" + traceToFile + ", sample=" + traceSample + ", players=" + players + "] alerts[console=" + alertsToConsole + ", file=" + alertsToFile + "]");
   }
 
   private void writeAsync(File file, String line) {

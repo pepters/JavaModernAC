@@ -67,8 +67,7 @@ public class AlertEngine {
     if (critical && criticalFirst.add(uuid)) {
       detail.sendAfter = now;
     } else {
-      detail.sendAfter =
-          now + (delayMin + random.nextInt(Math.max(1, delayMax - delayMin + 1))) * 1000L;
+      detail.sendAfter = now + (delayMin + random.nextInt(Math.max(1, delayMax - delayMin + 1))) * 1000L;
     }
     queues.computeIfAbsent(uuid, k -> Collections.synchronizedList(new ArrayList<>())).add(detail);
     sendDebug(uuid, detail);
@@ -151,10 +150,8 @@ public class AlertEngine {
           continue;
         }
         lastSent.put(playerId, now);
-        String families =
-            batch.stream().map(a -> a.family).distinct().collect(Collectors.joining(", "));
-        String windows =
-            batch.stream().map(a -> a.window).distinct().collect(Collectors.joining(", "));
+        String families = batch.stream().map(a -> a.family).distinct().collect(Collectors.joining(", "));
+        String windows = batch.stream().map(a -> a.window).distinct().collect(Collectors.joining(", "));
         double conf = batch.stream().mapToDouble(a -> a.confidence).max().orElse(0.0) * 100.0;
         AlertDetail sample = batch.get(batch.size() - 1);
         String msg =
@@ -169,17 +166,7 @@ public class AlertEngine {
         if (sample.soft) {
           msg = "[soft] " + msg;
         }
-        plugin
-            .getDetectionLogger()
-            .alert(
-                playerId,
-                families,
-                "windows="
-                    + windows
-                    + ", ping="
-                    + sample.ping
-                    + ", tps="
-                    + String.format(Locale.US, "%.1f", sample.tps));
+        plugin.getDetectionLogger().alert(playerId, families, "windows=" + windows + ", ping=" + sample.ping + ", tps=" + String.format(Locale.US, "%.1f", sample.tps));
         Bukkit.getConsoleSender().sendMessage(msg);
         for (Player staff : Bukkit.getOnlinePlayers()) {
           if (staff.hasPermission(perm)) {

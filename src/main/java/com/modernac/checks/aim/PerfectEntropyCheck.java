@@ -39,11 +39,7 @@ public class PerfectEntropyCheck extends AimCheck {
     double tps = tpsArr.length > 0 && Double.isFinite(tpsArr[0]) ? tpsArr[0] : 20.0;
     int ping = player != null ? player.getPing() : 0;
     if (ping > 180 || tps < 18.0) {
-      trace(
-          "gate-fail ping="
-              + ping
-              + ", tps="
-              + String.format(Locale.US, "%.1f", tps));
+      trace("gate-fail ping=" + ping + ", tps=" + String.format(Locale.US, "%.1f", tps));
       return;
     }
     synchronized (yawSamples) {
@@ -90,12 +86,10 @@ public class PerfectEntropyCheck extends AimCheck {
       }
     }
     if (h < 1.0) {
-      DetectionResult result =
-          new DetectionResult(getName(), 1.0, Window.SHORT, true, true, true);
+      DetectionResult result = new DetectionResult(getName(), 1.0, Window.SHORT, true, true, true);
       fail(result);
     } else if (h < 2.0) {
-      DetectionResult result =
-          new DetectionResult(getName(), 0.9, Window.SHORT, true, true, true);
+      DetectionResult result = new DetectionResult(getName(), 0.9, Window.SHORT, true, true, true);
       fail(result);
     }
   }

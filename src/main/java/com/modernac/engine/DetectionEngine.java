@@ -27,8 +27,7 @@ public class DetectionEngine {
     }
     double evidence = Math.min(1.0, Math.max(0.0, vl / 100.0));
     String family = check.getName();
-    DetectionResult result =
-        new DetectionResult(family, evidence, Window.SHORT, true, true, false);
+    DetectionResult result = new DetectionResult(family, evidence, Window.SHORT, true, true, false);
     record(check, result);
   }
 
@@ -61,32 +60,11 @@ public class DetectionEngine {
       tps = tpsArr[0];
     }
     EvalOutcome outcome = evaluate(uuid, record, ping, tps);
-    if (outcome.highest == PunishmentTier.HIGH
-        || outcome.highest == PunishmentTier.CRITICAL) {
+    if (outcome.highest == PunishmentTier.HIGH || outcome.highest == PunishmentTier.CRITICAL) {
       double conf = outcome.highest == PunishmentTier.CRITICAL ? 1.0 : 0.9;
-      AlertDetail detail =
-          new AlertDetail(
-              result.getFamily(),
-              result.getWindow().name(),
-              conf,
-              ping,
-              tps,
-              outcome.highest,
-              outcome.soft);
-      plugin
-          .getAlertEngine()
-          .enqueue(uuid, detail, outcome.highest == PunishmentTier.CRITICAL);
-      plugin
-          .getDetectionLogger()
-          .alert(
-              uuid,
-              detail.family,
-              "window="
-                  + detail.window
-                  + ", ping="
-                  + ping
-                  + ", tps="
-                  + String.format(Locale.US, "%.1f", tps));
+      AlertDetail detail = new AlertDetail(result.getFamily(), result.getWindow().name(), conf, ping, tps, outcome.highest, outcome.soft);
+      plugin.getAlertEngine().enqueue(uuid, detail, outcome.highest == PunishmentTier.CRITICAL);
+      plugin.getDetectionLogger().alert(uuid, detail.family, "window=" + detail.window + ", ping=" + ping + ", tps=" + String.format(Locale.US, "%.1f", tps));
     }
     plugin.getMitigationManager().mitigate(uuid, outcome.reduction);
     if (outcome.punish) {
@@ -105,8 +83,7 @@ public class DetectionEngine {
     double total = 0.0;
     PunishmentTier highest = null;
     for (FamilyRecord fam : record.families.values()) {
-      double famScore =
-          fam.windowScores.values().stream().mapToDouble(Double::doubleValue).max().orElse(0.0);
+      double famScore = fam.windowScores.values().stream().mapToDouble(Double::doubleValue).max().orElse(0.0);
       if (fam.latencyOK && fam.stabilityOK && famScore >= 0.90) {
         familyCount++;
         windowCount += (int) fam.windowScores.values().stream().filter(v -> v >= 0.90).count();
