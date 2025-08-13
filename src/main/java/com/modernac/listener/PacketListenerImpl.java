@@ -3,12 +3,12 @@ package com.modernac.listener;
 import com.modernac.ModernACPlugin;
 import com.modernac.manager.CheckManager;
 import com.modernac.player.RotationData;
-import io.github.retrooper.packetevents.event.PacketListener;
-import io.github.retrooper.packetevents.event.PacketPlayReceiveEvent;
-import io.github.retrooper.packetevents.protocol.packettype.PacketType;
-import io.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientLook;
-import io.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPositionLook;
-import io.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientUseEntity;
+import com.github.retrooper.packetevents.event.PacketListener;
+import com.github.retrooper.packetevents.event.PacketReceiveEvent;
+import com.github.retrooper.packetevents.protocol.packettype.PacketType;
+import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientLook;
+import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPositionLook;
+import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientUseEntity;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -25,9 +25,9 @@ public class PacketListenerImpl implements PacketListener {
     }
 
     @Override
-    public void onPacketPlayReceive(PacketPlayReceiveEvent event) {
-        UUID uuid = event.getPlayer().getUniqueId();
-        PacketType type = event.getPacketType();
+    public void onPacketReceive(PacketReceiveEvent event) {
+        UUID uuid = event.getUser().getUUID();
+        var type = event.getPacketType();
         if (type == PacketType.Play.Client.LOOK) {
             WrapperPlayClientLook wrapper = new WrapperPlayClientLook(event);
             handleRotation(uuid, wrapper.getYaw(), wrapper.getPitch());

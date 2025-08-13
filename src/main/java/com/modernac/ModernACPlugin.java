@@ -11,8 +11,8 @@ import com.modernac.listener.PacketListenerImpl;
 import com.modernac.engine.DetectionEngine;
 import com.modernac.engine.AlertEngine;
 import com.modernac.commands.AcCommand;
-import io.github.retrooper.packetevents.PacketEvents;
-import io.github.retrooper.packetevents.manager.server.ServerVersion;
+import com.github.retrooper.packetevents.PacketEvents;
+import com.github.retrooper.packetevents.manager.server.ServerVersion;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.Map;
@@ -29,15 +29,15 @@ public class ModernACPlugin extends JavaPlugin {
     private AlertEngine alertEngine;
     private PunishmentManager punishmentManager;
     private MitigationManager mitigationManager;
-    private PacketListenerImpl packetListener;
     private DetectionEngine detectionEngine;
     private final Map<UUID, Long> exemptions = new ConcurrentHashMap<>();
 
     @Override
     public void onLoad() {
-        PacketEvents.get().getSettings()
-                .fallbackServerVersion(ServerVersion.v1_16_5)
+        PacketEvents.getAPI().getSettings()
+                .fallbackServerVersion(ServerVersion.V_1_16_5)
                 .checkForUpdates(false);
+        PacketEvents.getAPI().load();
     }
 
     @Override
@@ -53,15 +53,18 @@ public class ModernACPlugin extends JavaPlugin {
         this.mitigationManager = new MitigationManager(this);
         this.detectionEngine = new DetectionEngine(this);
 
-        PacketEvents.get().init();
-        this.packetListener = new PacketListenerImpl(this);
-        PacketEvents.get().getEventManager().registerListener(packetListener);
+        PacketEvents.getAPI().init();
+        PacketEvents.getAPI().getEventManager().registerListener(new PacketListenerImpl(this));
 
         getServer().getPluginManager().registerEvents(new PlayerListener(this), this);
 
         AcCommand ac = new AcCommand(this);
-        getCommand("ac").setExecutor(ac);
-        getCommand("ac").setTabCompleter(ac);
+        if (getCommand("ac") != null) {
+            getCommand("ac").setExecutor(ac);
+            getCommand("ac").setTabCompleter(ac);
+        } else {
+            getLogger().severe("/ac command not defined in plugin.yml");
+        }
 
         getLogger().info("ModernAC enabled.");
     }
@@ -77,7 +80,13 @@ public class ModernACPlugin extends JavaPlugin {
         if (alertEngine != null) {
             alertEngine.shutdown();
         }
-        PacketEvents.get().terminate();
+        if (punishmentManager != null) {
+            punishmentManager.reload();
+        }
+        if (mitigationManager != null) {
+            mitigationManager.reload();
+        }
+        PacketEvents.getAPI().terminate();
         getLogger().info("ModernAC disabled.");
     }
 
@@ -95,6 +104,9 @@ public class ModernACPlugin extends JavaPlugin {
         this.configManager = new ConfigManager(this);
         this.messageManager.reload();
         this.alertEngine.reload();
+        this.punishmentManager.reload();
+        this.mitigationManager.reload();
+        this.detectionEngine.reload();
     }
 
     public void exemptPlayer(UUID uuid, long durationMs) {

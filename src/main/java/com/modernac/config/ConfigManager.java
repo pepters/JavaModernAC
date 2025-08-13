@@ -24,8 +24,7 @@ public class ConfigManager {
     }
 
     public double getTpsSoftGuard() {
-        String raw = config.getString("latency.tps_soft_guard", null);
-        return raw != null ? Double.parseDouble(raw) : 18.0D;
+        return config.getDouble("latency.tps_soft_guard", 18.0D);
     }
 
     public boolean isExperimentalDetections() {
@@ -46,16 +45,12 @@ public class ConfigManager {
     }
 
     private int[] getRange(String path, int defMin, int defMax) {
-        String raw = config.getString(path, null);
-        if (raw != null) {
-            raw = raw.replace("[", "").replace("]", "");
-            String[] parts = raw.split(",");
-            if (parts.length >= 2) {
-                try {
-                    int a = Integer.parseInt(parts[0].trim());
-                    int b = Integer.parseInt(parts[1].trim());
-                    return new int[]{a, b};
-                } catch (NumberFormatException ignored) {}
+        java.util.List<?> list = config.getList(path);
+        if (list != null && list.size() >= 2) {
+            Object aObj = list.get(0);
+            Object bObj = list.get(1);
+            if (aObj instanceof Number && bObj instanceof Number) {
+                return new int[]{((Number) aObj).intValue(), ((Number) bObj).intValue()};
             }
         }
         return new int[]{defMin, defMax};
@@ -109,7 +104,7 @@ public class ConfigManager {
     }
 
     public double getMaxDamageReduction() {
-        return Double.parseDouble(config.getString("mitigation.max_damage_reduction", "0.90"));
+        return config.getDouble("mitigation.max_damage_reduction", 0.90D);
     }
 
     public boolean isDetectionsDebug() {
