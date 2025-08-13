@@ -42,8 +42,7 @@ public class CheckManager {
           @Override
           public Thread newThread(Runnable r) {
             Thread t = new Thread(r, "ModernAC-detector-" + idx.incrementAndGet());
-            t.setUncaughtExceptionHandler(
-                (th, ex) -> logger.error("Detector thread failure", ex));
+            t.setUncaughtExceptionHandler((th, ex) -> logger.error("Detector thread failure", ex));
             t.setDaemon(true);
             return t;
           }
@@ -98,9 +97,7 @@ public class CheckManager {
             try {
               check.handle(packet);
             } catch (Throwable t) {
-              plugin
-                  .getDetectionLogger()
-                  .error("Exception in " + check.getName() + ".handle", t);
+              plugin.getDetectionLogger().error("Exception in " + check.getName() + ".handle", t);
             }
           }
         });

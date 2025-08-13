@@ -3,9 +3,9 @@ package com.modernac.checks.aim;
 import com.modernac.ModernACPlugin;
 import com.modernac.player.PlayerData;
 import com.modernac.player.RotationData;
-import java.util.Deque;
 import java.util.ArrayDeque;
 import java.util.Arrays;
+import java.util.Deque;
 
 public class RankCheck extends AimCheck {
 
