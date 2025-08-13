@@ -3,6 +3,8 @@ package com.modernac.checks.aim;
 import com.modernac.ModernACPlugin;
 import com.modernac.player.PlayerData;
 import com.modernac.player.RotationData;
+import java.util.Arrays;
+import java.util.Deque;
 
 public class ZFactorCheck extends AimCheck {
 
@@ -10,7 +12,26 @@ public class ZFactorCheck extends AimCheck {
     super(plugin, data, "zFactor", false);
   }
 
-  private final java.util.Deque<Double> samples = new java.util.ArrayDeque<>();
+  private static final int MIN_SAMPLES = 8;
+  private static final double EPS = 1e-6;
+
+  private final Deque<Double> samples = new java.util.ArrayDeque<>();
+
+  private static double[] snapshotNonNull(Deque<Double> q) {
+    Double[] tmp;
+    synchronized (q) {
+      tmp = q.toArray(new Double[0]);
+    }
+    double[] out = new double[tmp.length];
+    int n = 0;
+    for (Double d : tmp) {
+      if (d != null) {
+        double v = d.doubleValue();
+        if (!Double.isNaN(v) && !Double.isInfinite(v)) out[n++] = v;
+      }
+    }
+    return n == out.length ? out : Arrays.copyOf(out, n);
+  }
 
   @Override
   public void handle(Object packet) {
@@ -18,20 +39,39 @@ public class ZFactorCheck extends AimCheck {
       return;
     }
     RotationData rot = (RotationData) packet;
-    trace("handled zFactor");
-    samples.add(rot.getYawChange());
-    if (samples.size() > 20) {
-      samples.pollFirst();
+    double yaw = rot.getYawChange();
+    if (!Double.isFinite(yaw)) {
+      return;
     }
-    if (samples.size() == 20) {
-      double mean = samples.stream().mapToDouble(d -> d).average().orElse(0.0);
-      double variance =
-          samples.stream().mapToDouble(d -> (d - mean) * (d - mean)).sum() / samples.size();
-      double std = Math.sqrt(variance);
-      double z = std == 0 ? 0 : Math.abs(rot.getYawChange() - mean) / std;
-      if (z > 3) {
-        fail(1, true);
+    synchronized (samples) {
+      if (samples.size() >= 20) {
+        samples.pollFirst();
       }
+      samples.addLast(yaw);
+    }
+    double[] arr = snapshotNonNull(samples);
+    if (arr.length < MIN_SAMPLES) {
+      return;
+    }
+    double latest = arr[arr.length - 1];
+    int n = arr.length - 1;
+    double sum = 0, sum2 = 0;
+    for (int i = 0; i < n; i++) {
+      double v = arr[i];
+      sum += v;
+      sum2 += v * v;
+    }
+    double mean = sum / n;
+    double var = (sum2 / n) - mean * mean;
+    if (var <= EPS) {
+      return;
+    }
+    double std = Math.sqrt(var);
+    double z = Math.abs(latest - mean) / std;
+    if (z >= 6.0) {
+      fail(100, true);
+    } else if (z >= 4.0) {
+      fail(50, true);
     }
   }
 }
