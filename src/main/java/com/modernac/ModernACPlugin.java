@@ -13,7 +13,7 @@ import com.modernac.manager.ExemptManager;
 import com.modernac.manager.MitigationManager;
 import com.modernac.manager.PunishmentManager;
 import com.modernac.messages.MessageManager;
-import com.github.retrooper.packetevents.factory.spigot.SpigotPacketEventsBuilder;
+import io.github.retrooper.packetevents.factory.spigot.SpigotPacketEventsBuilder;
 import java.util.UUID;
 import org.bukkit.plugin.java.JavaPlugin;
 
