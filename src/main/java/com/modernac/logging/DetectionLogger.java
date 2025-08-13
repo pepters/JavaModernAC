@@ -18,6 +18,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
 import org.bukkit.Bukkit;
 
 /** Centralized logging for detections and alerts. */
@@ -139,6 +140,18 @@ public class DetectionLogger {
     }
     if (alertsToConsole) {
       logConsole(line);
+    }
+  }
+
+  public void error(String message) {
+    error(message, null);
+  }
+
+  public void error(String message, Throwable t) {
+    plugin.getLogger().log(Level.SEVERE, message, t);
+    String line = format.format(new Date()) + " [ERROR] " + message;
+    if (alertsToFile) {
+      writeAsync(alertFile, line);
     }
   }
 
