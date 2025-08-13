@@ -1,38 +1,40 @@
 package com.modernac.checks.aim;
 
+import com.modernac.ModernACPlugin;
+import com.modernac.logging.DebugLogger;
 import com.modernac.player.PlayerData;
 import com.modernac.player.RotationData;
-import com.modernac.logging.DebugLogger;
-import com.modernac.ModernACPlugin;
 
 public class ZFactorCheck extends AimCheck {
-    private final DebugLogger logger;
-    public ZFactorCheck(ModernACPlugin plugin, PlayerData data) {
-        super(plugin, data, "zFactor", false);
-        this.logger = plugin.getDebugLogger();
-    }
+  private final DebugLogger logger;
 
-    private final java.util.Deque<Double> samples = new java.util.ArrayDeque<>();
+  public ZFactorCheck(ModernACPlugin plugin, PlayerData data) {
+    super(plugin, data, "zFactor", false);
+    this.logger = plugin.getDebugLogger();
+  }
 
-    @Override
-    public void handle(Object packet) {
-        if (!(packet instanceof RotationData)) {
-            return;
-        }
-        RotationData rot = (RotationData) packet;
-        logger.log(data.getUuid() + " handled zFactor");
-        samples.add(rot.getYawChange());
-        if (samples.size() > 20) {
-            samples.pollFirst();
-        }
-        if (samples.size() == 20) {
-            double mean = samples.stream().mapToDouble(d -> d).average().orElse(0.0);
-            double variance = samples.stream().mapToDouble(d -> (d - mean) * (d - mean)).sum() / samples.size();
-            double std = Math.sqrt(variance);
-            double z = std == 0 ? 0 : Math.abs(rot.getYawChange() - mean) / std;
-            if (z > 3) {
-                fail(1, true);
-            }
-        }
+  private final java.util.Deque<Double> samples = new java.util.ArrayDeque<>();
+
+  @Override
+  public void handle(Object packet) {
+    if (!(packet instanceof RotationData)) {
+      return;
     }
+    RotationData rot = (RotationData) packet;
+    logger.log(data.getUuid() + " handled zFactor");
+    samples.add(rot.getYawChange());
+    if (samples.size() > 20) {
+      samples.pollFirst();
+    }
+    if (samples.size() == 20) {
+      double mean = samples.stream().mapToDouble(d -> d).average().orElse(0.0);
+      double variance =
+          samples.stream().mapToDouble(d -> (d - mean) * (d - mean)).sum() / samples.size();
+      double std = Math.sqrt(variance);
+      double z = std == 0 ? 0 : Math.abs(rot.getYawChange() - mean) / std;
+      if (z > 3) {
+        fail(1, true);
+      }
+    }
+  }
 }
