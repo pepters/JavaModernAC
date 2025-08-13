@@ -12,7 +12,7 @@ import com.modernac.engine.DetectionEngine;
 import com.modernac.engine.AlertEngine;
 import com.modernac.commands.AcCommand;
 import com.github.retrooper.packetevents.PacketEvents;
-import com.github.retrooper.packetevents.manager.server.ServerVersion;
+import io.github.retrooper.packetevents.factory.spigot.SpigotPacketEventsBuilder;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.Map;
@@ -34,9 +34,9 @@ public class ModernACPlugin extends JavaPlugin {
 
     @Override
     public void onLoad() {
-        PacketEvents.getAPI().getSettings()
-                .fallbackServerVersion(ServerVersion.V_1_16_5)
-                .checkForUpdates(false);
+        // PacketEvents 2.9.x bootstrap
+        PacketEvents.setAPI(SpigotPacketEventsBuilder.build(this));
+        PacketEvents.getAPI().getSettings().checkForUpdates(false);
         PacketEvents.getAPI().load();
     }
 
@@ -54,6 +54,7 @@ public class ModernACPlugin extends JavaPlugin {
         this.detectionEngine = new DetectionEngine(this);
 
         PacketEvents.getAPI().init();
+        // Регистрируем 2.9.x слушатель
         PacketEvents.getAPI().getEventManager().registerListener(new PacketListenerImpl(this));
 
         getServer().getPluginManager().registerEvents(new PlayerListener(this), this);
