@@ -1,16 +1,13 @@
 package com.modernac.checks.aim;
 
 import com.modernac.ModernACPlugin;
-import com.modernac.logging.DebugLogger;
 import com.modernac.player.PlayerData;
 import com.modernac.player.RotationData;
 
 public class AnalysisCheck extends AimCheck {
-  private final DebugLogger logger;
 
   public AnalysisCheck(ModernACPlugin plugin, PlayerData data) {
     super(plugin, data, "Analysis", false);
-    this.logger = plugin.getDebugLogger();
   }
 
   private int count;
@@ -22,7 +19,7 @@ public class AnalysisCheck extends AimCheck {
       return;
     }
     RotationData rot = (RotationData) packet;
-    logger.log(data.getUuid() + " handled Analysis");
+    trace("handled Analysis");
     count++;
     sumYaw += rot.getYawChange();
     sumSqYaw += rot.getYawChange() * rot.getYawChange();

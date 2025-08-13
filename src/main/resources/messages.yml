@@ -4,6 +4,6 @@ alerts:
 commands:
   reloaded: "&aConfiguration reloaded."
   no_permission: "&cYou do not have permission."
-  usage: "&cUsage: /ac <status|debug|exempt|reload|devfake|inspect>"
+  usage: "&cUsage: /ac <info|debug|exempt|reload|devfake|status|inspect>"
   player_not_found: "&cPlayer not found."
   exempt_set: "&a{player} exempt for {time}."

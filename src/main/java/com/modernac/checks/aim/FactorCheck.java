@@ -1,16 +1,13 @@
 package com.modernac.checks.aim;
 
 import com.modernac.ModernACPlugin;
-import com.modernac.logging.DebugLogger;
 import com.modernac.player.PlayerData;
 import com.modernac.player.RotationData;
 
 public class FactorCheck extends AimCheck {
-  private final DebugLogger logger;
 
   public FactorCheck(ModernACPlugin plugin, PlayerData data) {
     super(plugin, data, "Factor", false);
-    this.logger = plugin.getDebugLogger();
   }
 
   private double lastRatio;
@@ -22,7 +19,7 @@ public class FactorCheck extends AimCheck {
       return;
     }
     RotationData rot = (RotationData) packet;
-    logger.log(data.getUuid() + " handled Factor");
+    trace("handled Factor");
     if (rot.getPitchChange() != 0) {
       double ratio = rot.getYawChange() / rot.getPitchChange();
       if (Math.abs(ratio - lastRatio) < 0.01) {
