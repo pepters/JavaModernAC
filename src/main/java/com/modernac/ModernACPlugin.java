@@ -5,6 +5,7 @@ import com.modernac.commands.AcCommand;
 import com.modernac.config.ConfigManager;
 import com.modernac.engine.AlertEngine;
 import com.modernac.engine.DetectionEngine;
+import com.modernac.listener.CombatListener;
 import com.modernac.listener.PacketListenerImpl;
 import com.modernac.listener.PlayerListener;
 import com.modernac.logging.DetectionLogger;
@@ -57,6 +58,7 @@ public class ModernACPlugin extends JavaPlugin {
     PacketEvents.getAPI().getEventManager().registerListener(new PacketListenerImpl(this));
 
     getServer().getPluginManager().registerEvents(new PlayerListener(this), this);
+    getServer().getPluginManager().registerEvents(new CombatListener(this), this);
 
     AcCommand ac = new AcCommand(this);
     if (getCommand("ac") != null) {
