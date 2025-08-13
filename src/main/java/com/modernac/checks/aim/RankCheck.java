@@ -3,6 +3,9 @@ package com.modernac.checks.aim;
 import com.modernac.ModernACPlugin;
 import com.modernac.player.PlayerData;
 import com.modernac.player.RotationData;
+import java.util.ArrayDeque;
+import java.util.Arrays;
+import java.util.Deque;
 
 public class RankCheck extends AimCheck {
 
@@ -10,26 +13,53 @@ public class RankCheck extends AimCheck {
     super(plugin, data, "Rank", false);
   }
 
-  private final java.util.Deque<Double> samples = new java.util.ArrayDeque<>();
+  private static final int MIN_SAMPLES = 50;
+
+  private final Deque<Double> samples = new ArrayDeque<>();
+
+  private static double[] snapshotNonNull(Deque<Double> q) {
+    Double[] tmp;
+    synchronized (q) {
+      tmp = q.toArray(new Double[0]);
+    }
+    double[] out = new double[tmp.length];
+    int n = 0;
+    for (Double d : tmp) {
+      if (d != null) {
+        double v = d.doubleValue();
+        if (!Double.isNaN(v) && !Double.isInfinite(v)) out[n++] = v;
+      }
+    }
+    return n == out.length ? out : Arrays.copyOf(out, n);
+  }
 
   @Override
   public void handle(Object packet) {
     if (!(packet instanceof RotationData)) {
       return;
     }
-    RotationData rot = (RotationData) packet;
-    trace("handled Rank");
-    samples.add(rot.getYawChange());
-    if (samples.size() > 50) {
-      samples.pollFirst();
+    if (data == null) {
+      return;
     }
-    if (samples.size() == 50) {
-      java.util.List<Double> sorted =
-          samples.stream().sorted().collect(java.util.stream.Collectors.toList());
-      int index = sorted.indexOf(rot.getYawChange());
-      if (index == 0 || index == sorted.size() - 1) {
-        fail(1, true);
+    RotationData rot = (RotationData) packet;
+    double yaw = rot.getYawChange();
+    if (!Double.isFinite(yaw)) {
+      return;
+    }
+    synchronized (samples) {
+      if (samples.size() >= MIN_SAMPLES) {
+        samples.pollFirst();
       }
+      samples.addLast(yaw);
+    }
+    double[] arr = snapshotNonNull(samples);
+    if (arr.length < MIN_SAMPLES) {
+      return;
+    }
+    Arrays.sort(arr);
+    int index = Arrays.binarySearch(arr, yaw);
+    if (index <= 0 || index >= arr.length - 1) {
+      fail(1, true);
     }
   }
 }

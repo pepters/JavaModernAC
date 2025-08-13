@@ -143,13 +143,11 @@ public class AlertEngine {
         }
         plugin
             .getDetectionLogger()
-            .alert(
+            .trace(
                 playerId,
                 families,
                 "windows="
                     + windows
-                    + ", conf="
-                    + String.format(Locale.US, "%.1f", conf)
                     + ", ping="
                     + sample.ping
                     + ", tps="
