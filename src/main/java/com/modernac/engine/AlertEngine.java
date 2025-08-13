@@ -2,8 +2,17 @@ package com.modernac.engine;
 
 import com.modernac.ModernACPlugin;
 import com.modernac.config.ConfigManager;
+import com.modernac.manager.PunishmentTier;
 import com.modernac.messages.MessageManager;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Random;
+import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import org.bukkit.Bukkit;
@@ -16,6 +25,7 @@ public class AlertEngine {
   private final Map<UUID, List<AlertDetail>> queues = new ConcurrentHashMap<>();
   private final Map<UUID, Long> lastSent = new ConcurrentHashMap<>();
   private final Map<UUID, Set<UUID>> debugSubs = new ConcurrentHashMap<>();
+  private final Set<UUID> criticalFirst = ConcurrentHashMap.newKeySet();
   private int delayMin, delayMax, rateLimit, batchWindow;
   private int taskId = -1;
   private final Random random = new Random();
@@ -35,6 +45,7 @@ public class AlertEngine {
       Bukkit.getScheduler().cancelTask(taskId);
     }
     taskId = Bukkit.getScheduler().scheduleSyncRepeatingTask(plugin, this::flush, 10L, 10L);
+    criticalFirst.clear();
   }
 
   public void shutdown() {
@@ -44,14 +55,21 @@ public class AlertEngine {
     queues.clear();
     lastSent.clear();
     debugSubs.clear();
+    criticalFirst.clear();
   }
 
-  public void queueAlert(UUID uuid, AlertDetail detail, boolean soft) {
+  public void enqueue(UUID uuid, AlertDetail detail, boolean critical) {
+    if (detail.tier != PunishmentTier.HIGH && detail.tier != PunishmentTier.CRITICAL) {
+      return;
+    }
     long now = System.currentTimeMillis();
     detail.created = now;
-    detail.sendAfter =
-        now + (delayMin + random.nextInt(Math.max(1, delayMax - delayMin + 1))) * 1000L;
-    detail.soft = soft;
+    if (critical && criticalFirst.add(uuid)) {
+      detail.sendAfter = now;
+    } else {
+      detail.sendAfter =
+          now + (delayMin + random.nextInt(Math.max(1, delayMax - delayMin + 1))) * 1000L;
+    }
     queues.computeIfAbsent(uuid, k -> Collections.synchronizedList(new ArrayList<>())).add(detail);
     sendDebug(uuid, detail);
   }
@@ -122,6 +140,16 @@ public class AlertEngine {
         if (batch.isEmpty()) {
           continue;
         }
+        boolean eligible = false;
+        for (AlertDetail d : batch) {
+          if (d.tier == PunishmentTier.HIGH || d.tier == PunishmentTier.CRITICAL) {
+            eligible = true;
+            break;
+          }
+        }
+        if (!eligible) {
+          continue;
+        }
         lastSent.put(playerId, now);
         String families =
             batch.stream().map(a -> a.family).distinct().collect(Collectors.joining(", "));
@@ -143,7 +171,7 @@ public class AlertEngine {
         }
         plugin
             .getDetectionLogger()
-            .trace(
+            .alert(
                 playerId,
                 families,
                 "windows="
@@ -152,6 +180,7 @@ public class AlertEngine {
                     + sample.ping
                     + ", tps="
                     + String.format(Locale.US, "%.1f", sample.tps));
+        Bukkit.getConsoleSender().sendMessage(msg);
         for (Player staff : Bukkit.getOnlinePlayers()) {
           if (staff.hasPermission(perm)) {
             staff.sendMessage(msg);
@@ -172,16 +201,26 @@ public class AlertEngine {
     public final double confidence;
     public final int ping;
     public final double tps;
+    public final PunishmentTier tier;
+    public final boolean soft;
     private long created;
     private long sendAfter;
-    private boolean soft;
 
-    public AlertDetail(String family, String window, double confidence, int ping, double tps) {
+    public AlertDetail(
+        String family,
+        String window,
+        double confidence,
+        int ping,
+        double tps,
+        PunishmentTier tier,
+        boolean soft) {
       this.family = family;
       this.window = window;
       this.confidence = confidence;
       this.ping = ping;
       this.tps = tps;
+      this.tier = tier;
+      this.soft = soft;
     }
   }
 }

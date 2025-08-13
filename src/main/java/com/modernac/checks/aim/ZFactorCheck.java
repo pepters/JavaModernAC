@@ -3,8 +3,11 @@ package com.modernac.checks.aim;
 import com.modernac.ModernACPlugin;
 import com.modernac.player.PlayerData;
 import com.modernac.player.RotationData;
-import java.util.Arrays;
+import com.modernac.util.MathUtil;
 import java.util.Deque;
+import java.util.Locale;
+import org.bukkit.Bukkit;
+import org.bukkit.entity.Player;
 
 public class ZFactorCheck extends AimCheck {
 
@@ -17,22 +20,6 @@ public class ZFactorCheck extends AimCheck {
 
   private final Deque<Double> samples = new java.util.ArrayDeque<>();
 
-  private static double[] snapshotNonNull(Deque<Double> q) {
-    Double[] tmp;
-    synchronized (q) {
-      tmp = q.toArray(new Double[0]);
-    }
-    double[] out = new double[tmp.length];
-    int n = 0;
-    for (Double d : tmp) {
-      if (d != null) {
-        double v = d.doubleValue();
-        if (!Double.isNaN(v) && !Double.isInfinite(v)) out[n++] = v;
-      }
-    }
-    return n == out.length ? out : Arrays.copyOf(out, n);
-  }
-
   @Override
   public void handle(Object packet) {
     if (!(packet instanceof RotationData)) {
@@ -43,13 +30,25 @@ public class ZFactorCheck extends AimCheck {
     if (!Double.isFinite(yaw)) {
       return;
     }
+    Player player = Bukkit.getPlayer(data.getUuid());
+    double[] tpsArr = Bukkit.getTPS();
+    double tps = tpsArr.length > 0 && Double.isFinite(tpsArr[0]) ? tpsArr[0] : 20.0;
+    int ping = player != null ? player.getPing() : 0;
+    if (ping > 180 || tps < 18.0) {
+      trace(
+          "gate-fail ping="
+              + ping
+              + ", tps="
+              + String.format(Locale.US, "%.1f", tps));
+      return;
+    }
     synchronized (samples) {
       if (samples.size() >= 20) {
         samples.pollFirst();
       }
       samples.addLast(yaw);
     }
-    double[] arr = snapshotNonNull(samples);
+    double[] arr = MathUtil.snapshotNonNull(samples);
     if (arr.length < MIN_SAMPLES) {
       return;
     }

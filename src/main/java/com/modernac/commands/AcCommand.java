@@ -177,10 +177,11 @@ public class AcCommand implements CommandExecutor, TabCompleter {
         }
         plugin
             .getAlertEngine()
-            .queueAlert(
+            .enqueue(
                 target.getUniqueId(),
                 new com.modernac.engine.AlertEngine.AlertDetail(
                     "DEV", "SHORT", 1.0, 0, Bukkit.getTPS()[0]),
+                false,
                 false);
         sender.sendMessage(ChatColor.GREEN + "Dev alert queued for " + target.getName());
         return true;

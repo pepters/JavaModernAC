@@ -4,9 +4,9 @@ import com.modernac.ModernACPlugin;
 import com.modernac.checks.Check;
 import com.modernac.config.ConfigManager;
 import com.modernac.engine.AlertEngine.AlertDetail;
-import com.modernac.manager.MitigationManager;
 import com.modernac.manager.PunishmentTier;
 import java.util.EnumMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -25,9 +25,10 @@ public class DetectionEngine {
     if (experimental && !plugin.getConfigManager().isExperimentalDetections()) {
       return;
     }
-    double evidence = Math.min(1.0, vl / 100.0);
+    double evidence = Math.min(1.0, Math.max(0.0, vl / 100.0));
+    String family = check.getName();
     DetectionResult result =
-        new DetectionResult("LEGACY", evidence, Window.SHORT, true, true, false);
+        new DetectionResult(family, evidence, Window.SHORT, true, true, false);
     record(check, result);
   }
 
@@ -59,14 +60,43 @@ public class DetectionEngine {
     if (tpsArr.length > 0 && Double.isFinite(tpsArr[0])) {
       tps = tpsArr[0];
     }
-    boolean soft = evaluate(uuid, record, ping, tps);
-    AlertDetail detail =
-        new AlertDetail(
-            result.getFamily(), result.getWindow().name(), result.getEvidenceScore(), ping, tps);
-    plugin.getAlertEngine().queueAlert(uuid, detail, soft);
+    EvalOutcome outcome = evaluate(uuid, record, ping, tps);
+    if (outcome.highest == PunishmentTier.HIGH
+        || outcome.highest == PunishmentTier.CRITICAL) {
+      double conf = outcome.highest == PunishmentTier.CRITICAL ? 1.0 : 0.9;
+      AlertDetail detail =
+          new AlertDetail(
+              result.getFamily(),
+              result.getWindow().name(),
+              conf,
+              ping,
+              tps,
+              outcome.highest,
+              outcome.soft);
+      plugin
+          .getAlertEngine()
+          .enqueue(uuid, detail, outcome.highest == PunishmentTier.CRITICAL);
+      plugin
+          .getDetectionLogger()
+          .alert(
+              uuid,
+              detail.family,
+              "window="
+                  + detail.window
+                  + ", ping="
+                  + ping
+                  + ", tps="
+                  + String.format(Locale.US, "%.1f", tps));
+    }
+    plugin.getMitigationManager().mitigate(uuid, outcome.reduction);
+    if (outcome.punish) {
+      plugin.getPunishmentManager().schedule(uuid, outcome.highest);
+    } else {
+      plugin.getPunishmentManager().cancel(uuid);
+    }
   }
 
-  private boolean evaluate(UUID uuid, PlayerRecord record, int ping, double tps) {
+  private EvalOutcome evaluate(UUID uuid, PlayerRecord record, int ping, double tps) {
     ConfigManager cfg = plugin.getConfigManager();
     int requiredFamilies = cfg.getMinFamiliesForBan();
     boolean requireMultiWindow = cfg.isMultiWindowConfirmationRequired();
@@ -87,12 +117,10 @@ public class DetectionEngine {
       }
     }
     double avg = familyCount > 0 ? total / familyCount : 0.0;
-    MitigationManager mit = plugin.getMitigationManager();
     double maxReduction = cfg.getMaxDamageReduction();
     if (!Double.isFinite(maxReduction) || maxReduction < 0) maxReduction = 0;
     if (maxReduction > 1) maxReduction = 1;
     int reduction = (int) Math.round(avg * maxReduction * 100);
-    mit.mitigate(uuid, reduction);
 
     boolean soft = ping > cfg.getUnstableConnectionLimit() || tps < cfg.getTpsSoftGuard();
     if (soft && highest != null) {
@@ -103,17 +131,27 @@ public class DetectionEngine {
       }
     }
 
-    if (familyCount >= requiredFamilies
-        && (!requireMultiWindow || windowCount >= 2)
-        && highest != null
-        && highest != PunishmentTier.EXPERIMENTAL) {
-      record.currentTier = highest;
-      plugin.getPunishmentManager().schedule(uuid, highest);
-    } else {
-      record.currentTier = null;
-      plugin.getPunishmentManager().cancel(uuid);
+    boolean punish =
+        familyCount >= requiredFamilies
+            && (!requireMultiWindow || windowCount >= 2)
+            && highest != null
+            && highest != PunishmentTier.EXPERIMENTAL;
+    record.currentTier = punish ? highest : null;
+    return new EvalOutcome(soft, reduction, highest, punish);
+  }
+
+  private static class EvalOutcome {
+    final boolean soft;
+    final int reduction;
+    final PunishmentTier highest;
+    final boolean punish;
+
+    EvalOutcome(boolean soft, int reduction, PunishmentTier highest, boolean punish) {
+      this.soft = soft;
+      this.reduction = reduction;
+      this.highest = highest;
+      this.punish = punish;
     }
-    return soft;
   }
 
   public boolean isPunishable(UUID uuid, PunishmentTier tier) {
