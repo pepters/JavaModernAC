@@ -1,45 +1,31 @@
 package com.modernac.util;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
+import java.util.Arrays;
 
 public final class MathUtil {
   private MathUtil() {}
 
-  /** Approximate gcd for a collection of doubles. */
-  public static double findGcd(Collection<Double> values) {
-    if (values.isEmpty()) return 0.0;
-    double gcd = 0.0;
-    for (double v : values) {
-      if (gcd == 0.0) {
-        gcd = v;
-      } else {
-        gcd = gcd(gcd, v);
+  public static int findGcd(int[] a) {
+    if (a == null || a.length == 0) return 0;
+    int g = Math.abs(a[0]);
+    for (int i = 1; i < a.length && g != 1; i++) {
+      int x = Math.abs(a[i]);
+      while (x != 0) {
+        int t = g % x;
+        g = x;
+        x = t;
       }
     }
-    return gcd;
+    return g;
   }
 
-  private static double gcd(double a, double b) {
-    double tol = 1e-4;
-    while (b > tol) {
-      double t = b;
-      b = a % b;
-      a = t;
-    }
-    return a;
-  }
-
-  /** Compute interquartile range of collection. */
-  public static double iqr(Collection<Double> values) {
-    if (values.isEmpty()) return 0.0;
-    List<Double> list = new ArrayList<>(values);
-    Collections.sort(list);
-    int n = list.size();
-    double q1 = list.get(n / 4);
-    double q3 = list.get(3 * n / 4);
+  public static double iqr(double[] values) {
+    if (values == null || values.length == 0) return 0.0;
+    double[] copy = Arrays.copyOf(values, values.length);
+    Arrays.sort(copy);
+    int n = copy.length;
+    double q1 = copy[n / 4];
+    double q3 = copy[3 * n / 4];
     return q3 - q1;
   }
 }
