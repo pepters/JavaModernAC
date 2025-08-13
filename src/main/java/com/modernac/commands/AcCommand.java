@@ -1,6 +1,7 @@
 package com.modernac.commands;
 
 import com.modernac.ModernACPlugin;
+import com.modernac.manager.PunishmentTier;
 import com.modernac.util.TimeUtil;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -180,8 +181,7 @@ public class AcCommand implements CommandExecutor, TabCompleter {
             .enqueue(
                 target.getUniqueId(),
                 new com.modernac.engine.AlertEngine.AlertDetail(
-                    "DEV", "SHORT", 1.0, 0, Bukkit.getTPS()[0]),
-                false,
+                    "DEV", "SHORT", 1.0, 0, Bukkit.getTPS()[0], PunishmentTier.HIGH, false),
                 false);
         sender.sendMessage(ChatColor.GREEN + "Dev alert queued for " + target.getName());
         return true;

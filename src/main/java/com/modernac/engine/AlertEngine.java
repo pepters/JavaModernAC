@@ -207,6 +207,11 @@ public class AlertEngine {
     private long sendAfter;
 
     public AlertDetail(
+        String family, String window, double confidence, int ping, double tps) {
+      this(family, window, confidence, ping, tps, PunishmentTier.HIGH, false);
+    }
+
+    public AlertDetail(
         String family,
         String window,
         double confidence,
