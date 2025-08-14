@@ -21,9 +21,25 @@ jobs:
         with:
           distribution: temurin
           java-version: "17"
+          cache: maven
 
       - name: Spotless Check
         run: mvn -q -ntp spotless:check
 
+      - name: Guard: no confidence placeholders
+        run: |
+          if grep -RIn "{confidence}" src/main/resources messages*; then
+            echo "Unexpected {confidence} placeholder in messages"; exit 1;
+          fi
+
       - name: Maven Verify
         run: mvn -q -ntp -DskipTests=false verify
+
+      - name: Upload plugin jar
+        if: ${{ success() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ModernAC-${{ github.sha }}
+          path: target/*.jar
+          if-no-files-found: error
+          retention-days: 7

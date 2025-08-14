@@ -79,12 +79,11 @@ public class AlertEngine {
     if (subs == null) return;
     MessageManager mm = plugin.getMessageManager();
     String msg =
-        mm.getMessage("alerts.debug_format")
-            .replace("{player}", getName(target))
-            .replace("{families}", detail.family)
-            .replace("{confidence}", "")
-            .replace("{ping}", Integer.toString(detail.ping))
-            .replace("{tps}", String.format(Locale.US, "%.1f", detail.tps));
+          mm.getMessage("alerts.debug_format")
+              .replace("{player}", getName(target))
+              .replace("{families}", detail.family)
+              .replace("{ping}", Integer.toString(detail.ping))
+              .replace("{tps}", String.format(Locale.US, "%.1f", detail.tps));
     msg = ChatColor.translateAlternateColorCodes('&', msg);
     for (UUID sub : subs) {
       Player p = Bukkit.getPlayer(sub);
@@ -157,13 +156,12 @@ public class AlertEngine {
             batch.stream().map(a -> a.window).distinct().collect(Collectors.joining(", "));
         AlertDetail sample = batch.get(batch.size() - 1);
         String msg =
-            mm.getMessage("alerts.staff_format")
-                .replace("{player}", getName(playerId))
-                .replace("{families}", families)
-                .replace("{windows}", windows)
-                .replace("{confidence}", "")
-                .replace("{ping}", Integer.toString(sample.ping))
-                .replace("{tps}", String.format(Locale.US, "%.1f", sample.tps));
+              mm.getMessage("alerts.staff_format")
+                  .replace("{player}", getName(playerId))
+                  .replace("{families}", families)
+                  .replace("{windows}", windows)
+                  .replace("{ping}", Integer.toString(sample.ping))
+                  .replace("{tps}", String.format(Locale.US, "%.1f", sample.tps));
         msg = ChatColor.translateAlternateColorCodes('&', msg);
         if (sample.soft) {
           msg = "[soft] " + msg;
