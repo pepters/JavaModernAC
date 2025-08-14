@@ -68,8 +68,18 @@ public class ModernACPlugin extends JavaPlugin {
       getLogger().severe("/ac command not defined in plugin.yml");
     }
 
+    String ver = getDescription().getVersion();
+    if (ver == null || ver.contains("${")) {
+      String manifestVer = getClass().getPackage().getImplementationVersion();
+      if (manifestVer != null) {
+        ver = manifestVer;
+      }
+      getLogger().warning(
+          "Project version was not filtered into plugin.yml; using DEV fallback.");
+    }
+    final String displayVer = ver != null ? ver : "DEV";
     detectionLogger.logStartup();
-    getLogger().info("ModernAC enabled.");
+    getLogger().info(() -> "[ModernAC] Enabling ModernAC v" + displayVer);
   }
 
   @Override

@@ -43,6 +43,24 @@
         </dependency>
     </dependencies>
      <build>
+        <resources>
+            <!-- Фильтруем только plugin.yml, чтобы ${project.version} подставлялся -->
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+                <includes>
+                    <include>plugin.yml</include>
+                </includes>
+            </resource>
+            <!-- Остальные ресурсы без фильтрации -->
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>false</filtering>
+                <excludes>
+                    <exclude>plugin.yml</exclude>
+                </excludes>
+            </resource>
+        </resources>
          <plugins>
              <plugin>
                  <groupId>org.apache.maven.plugins</groupId>
@@ -85,6 +103,18 @@
                 <version>4.8.3.0</version>
                 <configuration>
                     <failOnError>false</failOnError>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>3.3.0</version>
+                <configuration>
+                    <archive>
+                        <manifestEntries>
+                            <Implementation-Version>${project.version}</Implementation-Version>
+                        </manifestEntries>
+                    </archive>
                 </configuration>
             </plugin>
          </plugins>
