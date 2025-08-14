@@ -6,14 +6,17 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
+import org.bukkit.util.Vector;
 
 public class PlayerData {
   private final UUID uuid;
   private final AtomicInteger vl = new AtomicInteger();
   private final BaselineProfile baseline = new BaselineProfile();
   private volatile long lastPvpHitAt;
-  private volatile UUID lastTargetUuid;
+  private volatile boolean lastTargetIsPlayer;
+  private volatile UUID lastTargetId;
   private volatile int cachedPing = -1;
+  private volatile Vector lastTargetUnit;
 
   public PlayerData(UUID uuid) {
     this.uuid = uuid;
@@ -43,21 +46,19 @@ public class PlayerData {
     baseline.update(rot.getYawChange(), rot.getPitchChange());
   }
 
-  public void markHit(Entity target) {
+  public void markHit(boolean targetIsPlayer, UUID targetId, Vector unitToTarget) {
     lastPvpHitAt = System.currentTimeMillis();
-    if (target instanceof Player) {
-      lastTargetUuid = target.getUniqueId();
-    } else {
-      lastTargetUuid = null;
-    }
+    lastTargetIsPlayer = targetIsPlayer;
+    lastTargetId = targetId;
+    lastTargetUnit = unitToTarget;
   }
 
   public boolean inRecentPvp(long ms) {
-    return lastTargetUuid != null && System.currentTimeMillis() - lastPvpHitAt <= ms;
+    return lastTargetIsPlayer && lastTargetId != null && System.currentTimeMillis() - lastPvpHitAt <= ms;
   }
 
   public Entity getLastTarget() {
-    return lastTargetUuid != null ? Bukkit.getEntity(lastTargetUuid) : null;
+    return lastTargetId != null ? Bukkit.getEntity(lastTargetId) : null;
   }
 
   public void setCachedPing(int ping) {
@@ -66,5 +67,9 @@ public class PlayerData {
 
   public int getCachedPing() {
     return cachedPing;
+  }
+
+  public Vector getLastTargetUnit() {
+    return lastTargetUnit;
   }
 }

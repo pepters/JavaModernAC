@@ -14,7 +14,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
 public class DistinctCheck extends AimCheck {
-  private static final String FAMILY = "AIM/Patterns";
+  private static final String FAMILY = "AIM/Patterns-SHORT";
 
   public DistinctCheck(ModernACPlugin plugin, PlayerData data) {
     super(plugin, data, "Distinct", false);

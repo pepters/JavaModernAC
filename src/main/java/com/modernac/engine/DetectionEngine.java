@@ -23,7 +23,17 @@ public class DetectionEngine {
   }
 
   private static final Set<String> NON_HEURISTIC =
-      Set.of("AIM/Outliers", "AIM/Patterns", "PerfectEntropy", "LBGCD", "LBTween");
+      Set.of(
+          "PerfectEntropy-LONG",
+          "PerfectEntropy-VLONG",
+          "AIM/Autocorr",
+          "AIM/Continuity",
+          "AIM/Quantization",
+          "AIM/ClickCoupling",
+          "AIM/Stickiness",
+          "AIM/Outliers-SHORT",
+          "LBGCD",
+          "LBTween");
 
   public void record(Check check, int vl, boolean punishable, boolean experimental) {
     if (experimental && !plugin.getConfigManager().isExperimentalDetections()) {
@@ -59,22 +69,21 @@ public class DetectionEngine {
     double[] tpsArr = Bukkit.getTPS();
     double tps = tpsArr.length > 0 && Double.isFinite(tpsArr[0]) ? tpsArr[0] : 20.0;
     EvalOutcome outcome = evaluate(uuid, record, ping, tps);
+    boolean pingKnown = ping > 0 && ping <= 180;
+    boolean tpsOK = tps >= 18.0;
     boolean alertEligible =
-        outcome.families >= plugin.getConfigManager().getMinFamiliesForBan()
-            && (!plugin.getConfigManager().isMultiWindowConfirmationRequired()
-                || outcome.windows >= 2)
+        pingKnown
+            && tpsOK
+            && outcome.families >= cfg.getMinFamiliesForBan()
+            && (!cfg.isMultiWindowConfirmationRequired() || outcome.windows >= 2)
             && outcome.highest != null
             && (outcome.highest == PunishmentTier.HIGH
                 || outcome.highest == PunishmentTier.CRITICAL);
-    if (ping <= 0) {
-      alertEligible = false;
+    if (!pingKnown || !tpsOK) {
       outcome.punish = false;
     }
     if (alertEligible) {
-      double conf =
-          outcome.highest == PunishmentTier.CRITICAL
-              ? 1.0
-              : (outcome.highest == PunishmentTier.HIGH ? 0.9 : 0.75);
+      double conf = outcome.highest == PunishmentTier.CRITICAL ? 1.0 : 0.9;
       AlertDetail detail =
           new AlertDetail(
               result.getFamily(),

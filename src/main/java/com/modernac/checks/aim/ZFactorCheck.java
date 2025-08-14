@@ -9,7 +9,7 @@ import com.modernac.util.MathUtil;
 import java.util.Deque;
 
 public class ZFactorCheck extends AimCheck {
-  private static final String FAMILY = "AIM/Outliers";
+  private static final String FAMILY = "AIM/Outliers-SHORT";
 
   public ZFactorCheck(ModernACPlugin plugin, PlayerData data) {
     super(plugin, data, "zFactor", false);

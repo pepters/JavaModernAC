@@ -10,7 +10,7 @@ import java.util.Arrays;
 import java.util.Deque;
 
 public class PatternAnalysisCheck extends AimCheck {
-  private static final String FAMILY = "AIM/Patterns";
+  private static final String FAMILY = "AIM/Patterns-SHORT";
 
   public PatternAnalysisCheck(ModernACPlugin plugin, PlayerData data) {
     super(plugin, data, "Pattern Analysis", false);

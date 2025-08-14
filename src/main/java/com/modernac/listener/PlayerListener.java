@@ -5,6 +5,7 @@ import com.modernac.player.PlayerData;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
+import org.bukkit.util.Vector;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
@@ -56,7 +57,14 @@ public class PlayerListener implements Listener {
     PlayerData data = plugin.getCheckManager().getPlayerData(damager.getUniqueId());
     if (data != null) {
       Entity target = event.getEntity();
-      data.markHit(target);
+      Vector unit = null;
+      if (target != null) {
+        Vector dir = target.getLocation().toVector().subtract(damager.getLocation().toVector());
+        if (dir.lengthSquared() > 0) {
+          unit = dir.normalize();
+        }
+      }
+      data.markHit(target instanceof Player, target != null ? target.getUniqueId() : null, unit);
     }
   }
 
@@ -65,7 +73,15 @@ public class PlayerListener implements Listener {
     PlayerData data =
         plugin.getCheckManager().getPlayerData(event.getPlayer().getUniqueId());
     if (data != null) {
-      data.markHit(event.getRightClicked());
+      Entity target = event.getRightClicked();
+      Vector unit = null;
+      if (target != null) {
+        Vector dir = target.getLocation().toVector().subtract(event.getPlayer().getLocation().toVector());
+        if (dir.lengthSquared() > 0) {
+          unit = dir.normalize();
+        }
+      }
+      data.markHit(target instanceof Player, target != null ? target.getUniqueId() : null, unit);
     }
   }
 
