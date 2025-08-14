@@ -8,6 +8,7 @@ import com.modernac.manager.PunishmentTier;
 import java.util.EnumMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import org.bukkit.Bukkit;
@@ -20,6 +21,27 @@ public class DetectionEngine {
   public DetectionEngine(ModernACPlugin plugin) {
     this.plugin = plugin;
   }
+
+  private static final Set<String> HEURISTICS =
+      Set.of(
+          "Simple heuristic",
+          "Aggressive Component",
+          "Randomizer flaw Heuristic",
+          "TriggerBot",
+          "Blink",
+          "Snap",
+          "Improbable");
+
+  private static final Set<String> NON_HEURISTIC =
+      Set.of(
+          "Rank",
+          "IQR",
+          "zFactor",
+          "Pattern Analysis",
+          "Pattern Statistics",
+          "PerfectEntropy",
+          "LBGCD",
+          "LBTween");
 
   public void record(Check check, int vl, boolean punishable, boolean experimental) {
     if (experimental && !plugin.getConfigManager().isExperimentalDetections()) {
@@ -50,20 +72,22 @@ public class DetectionEngine {
     if (tier.ordinal() < fam.tier.ordinal()) {
       fam.tier = tier;
     }
-    int ping = 0;
-    double tps = 20.0;
-    if (Bukkit.getPlayer(uuid) != null) {
-      ping = Bukkit.getPlayer(uuid).getPing();
-    }
+    com.modernac.player.PlayerData pd = plugin.getCheckManager().getPlayerData(uuid);
+    int ping = pd != null ? pd.getCachedPing() : -1;
     double[] tpsArr = Bukkit.getTPS();
-    if (tpsArr.length > 0 && Double.isFinite(tpsArr[0])) {
-      tps = tpsArr[0];
-    }
+    double tps = tpsArr.length > 0 && Double.isFinite(tpsArr[0]) ? tpsArr[0] : 20.0;
     EvalOutcome outcome = evaluate(uuid, record, ping, tps);
     boolean alertEligible =
-        outcome.punish
-            || outcome.highest == PunishmentTier.HIGH
-            || outcome.highest == PunishmentTier.CRITICAL;
+        outcome.families >= plugin.getConfigManager().getMinFamiliesForBan()
+            && (!plugin.getConfigManager().isMultiWindowConfirmationRequired()
+                || outcome.windows >= 2)
+            && outcome.highest != null
+            && (outcome.highest == PunishmentTier.HIGH
+                || outcome.highest == PunishmentTier.CRITICAL);
+    if (ping <= 0) {
+      alertEligible = false;
+      outcome.punish = false;
+    }
     if (alertEligible) {
       double conf =
           outcome.highest == PunishmentTier.CRITICAL
@@ -79,17 +103,6 @@ public class DetectionEngine {
               outcome.highest,
               outcome.soft);
       plugin.getAlertEngine().enqueue(uuid, detail, outcome.highest == PunishmentTier.CRITICAL);
-      plugin
-          .getDetectionLogger()
-          .alert(
-              uuid,
-              detail.family,
-              "window="
-                  + detail.window
-                  + ", ping="
-                  + ping
-                  + ", tps="
-                  + String.format(Locale.US, "%.1f", tps));
     }
     plugin.getMitigationManager().mitigate(uuid, outcome.reduction);
     if (outcome.punish) {
@@ -104,15 +117,25 @@ public class DetectionEngine {
     int requiredFamilies = cfg.getMinIndependentFamiliesForAction();
     boolean requireMultiWindow = cfg.isMultiWindowConfirmationRequired();
     int familyCount = 0;
+    int familyCountNonHeu = 0;
     int windowCount = 0;
     double total = 0.0;
     PunishmentTier highest = null;
-    for (FamilyRecord fam : record.families.values()) {
-      double famScore =
-          fam.windowScores.values().stream().mapToDouble(Double::doubleValue).max().orElse(0.0);
+    for (Map.Entry<String, FamilyRecord> e : record.families.entrySet()) {
+      String famName = e.getKey();
+      FamilyRecord fam = e.getValue();
+      double famScore = 0.0;
+      int famWindows = 0;
+      for (double v : fam.windowScores.values()) {
+        if (v > famScore) famScore = v;
+        if (v >= 0.90) famWindows++;
+      }
       if (fam.latencyOK && fam.stabilityOK && famScore >= 0.90) {
         familyCount++;
-        windowCount += (int) fam.windowScores.values().stream().filter(v -> v >= 0.90).count();
+        if (NON_HEURISTIC.contains(famName)) {
+          familyCountNonHeu++;
+        }
+        windowCount += famWindows;
         if (highest == null || fam.tier.ordinal() < highest.ordinal()) {
           highest = fam.tier;
         }
@@ -135,25 +158,35 @@ public class DetectionEngine {
     }
 
     boolean punish =
-        familyCount >= requiredFamilies
+        familyCountNonHeu >= requiredFamilies
             && (!requireMultiWindow || windowCount >= 2)
             && highest != null
             && highest != PunishmentTier.EXPERIMENTAL;
     record.currentTier = punish ? highest : null;
-    return new EvalOutcome(soft, reduction, highest, punish);
+    return new EvalOutcome(soft, reduction, highest, punish, familyCountNonHeu, windowCount);
   }
 
   private static class EvalOutcome {
     final boolean soft;
     final int reduction;
     final PunishmentTier highest;
-    final boolean punish;
+    boolean punish;
+    final int families;
+    final int windows;
 
-    EvalOutcome(boolean soft, int reduction, PunishmentTier highest, boolean punish) {
+    EvalOutcome(
+        boolean soft,
+        int reduction,
+        PunishmentTier highest,
+        boolean punish,
+        int families,
+        int windows) {
       this.soft = soft;
       this.reduction = reduction;
       this.highest = highest;
       this.punish = punish;
+      this.families = families;
+      this.windows = windows;
     }
   }
 

@@ -14,7 +14,6 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.OfflinePlayer;
@@ -26,6 +25,7 @@ public class AlertEngine {
   private final Map<UUID, Long> lastSent = new ConcurrentHashMap<>();
   private final Map<UUID, Set<UUID>> debugSubs = new ConcurrentHashMap<>();
   private final Set<UUID> criticalFirst = ConcurrentHashMap.newKeySet();
+  private final Map<UUID, Map<String, Long>> familyCooldown = new ConcurrentHashMap<>();
   private int delayMin, delayMax, rateLimit, batchWindow;
   private int taskId = -1;
 
@@ -55,6 +55,15 @@ public class AlertEngine {
     lastSent.clear();
     debugSubs.clear();
     criticalFirst.clear();
+    familyCooldown.clear();
+  }
+
+  public void clear(UUID uuid) {
+    queues.remove(uuid);
+    lastSent.remove(uuid);
+    debugSubs.remove(uuid);
+    criticalFirst.remove(uuid);
+    familyCooldown.remove(uuid);
   }
 
   public void enqueue(UUID uuid, AlertDetail detail, boolean critical) {
@@ -137,11 +146,28 @@ public class AlertEngine {
           continue;
         }
         lastSent.put(playerId, now);
-        String families =
-            batch.stream().map(a -> a.family).distinct().collect(Collectors.joining(", "));
-        String windows =
-            batch.stream().map(a -> a.window).distinct().collect(Collectors.joining(", "));
+        Map<String, Long> famCd = familyCooldown.computeIfAbsent(playerId, k -> new ConcurrentHashMap<>());
+        java.util.LinkedHashSet<String> famSet = new java.util.LinkedHashSet<>();
+        java.util.LinkedHashSet<String> winSet = new java.util.LinkedHashSet<>();
         AlertDetail sample = batch.get(batch.size() - 1);
+        for (AlertDetail d : batch) {
+          if (d.ping <= 0) continue;
+          long lastFam = famCd.getOrDefault(d.family, 0L);
+          if (now - lastFam < rateLimit * 1000L) {
+            continue;
+          }
+          famCd.put(d.family, now);
+          famSet.add(d.family);
+          winSet.add(d.window);
+        }
+        if (famSet.isEmpty()) {
+          continue;
+        }
+        if (famSet.remove("Rank") | famSet.remove("IQR") | famSet.remove("zFactor")) {
+          famSet.add("AIM");
+        }
+        String families = String.join(", ", famSet);
+        String windows = String.join(", ", winSet);
         String msg =
             mm.getMessage("alerts.staff_format")
                 .replace("{player}", getName(playerId))

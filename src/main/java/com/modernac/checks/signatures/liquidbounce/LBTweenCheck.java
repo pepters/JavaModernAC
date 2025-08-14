@@ -9,9 +9,6 @@ import com.modernac.player.RotationData;
 import com.modernac.util.MathUtil;
 import java.util.ArrayDeque;
 import java.util.Deque;
-import java.util.Locale;
-import org.bukkit.Bukkit;
-import org.bukkit.entity.Player;
 
 /**
  * Detects LiquidBounce's Tween-like smooth aimbot behaviour. Looks for very low jerk and
@@ -19,9 +16,11 @@ import org.bukkit.entity.Player;
  */
 public class LBTweenCheck extends AimCheck {
   private final Deque<Double> yawDeltas = new ArrayDeque<>();
+  private static final int STREAK_LIMIT = 2;
+  private int streak;
 
   public LBTweenCheck(ModernACPlugin plugin, PlayerData data) {
-    super(plugin, data, "LB-Tween", false);
+    super(plugin, data, "LBTween", false);
   }
 
   @Override
@@ -29,20 +28,9 @@ public class LBTweenCheck extends AimCheck {
     if (!(packet instanceof RotationData)) {
       return;
     }
-    if (data == null) {
-      return;
-    }
     RotationData rot = (RotationData) packet;
     double yaw = rot.getYawChange();
     if (!Double.isFinite(yaw)) {
-      return;
-    }
-    Player player = Bukkit.getPlayer(data.getUuid());
-    double[] tpsArr = Bukkit.getTPS();
-    double tps = tpsArr.length > 0 && Double.isFinite(tpsArr[0]) ? tpsArr[0] : 20.0;
-    int ping = player != null ? player.getPing() : 0;
-    if (ping > 180 || tps < 18.0) {
-      trace("gate-fail ping=" + ping + ", tps=" + String.format(Locale.US, "%.1f", tps));
       return;
     }
     synchronized (yawDeltas) {
@@ -76,9 +64,15 @@ public class LBTweenCheck extends AimCheck {
       }
     }
     if (std < 0.01 && ratioMax < 0.02) {
-      DetectionResult result =
-          new DetectionResult("GEOMETRY", 0.9, Window.LONG, true, true, true);
-      fail(result);
+      streak++;
+      if (streak >= STREAK_LIMIT) {
+        streak = 0;
+        DetectionResult result =
+            new DetectionResult(getName(), 0.9, Window.LONG, true, true, true);
+        fail(result);
+      }
+    } else {
+      streak = 0;
     }
   }
 }

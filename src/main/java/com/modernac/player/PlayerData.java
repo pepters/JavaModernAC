@@ -8,6 +8,9 @@ public class PlayerData {
   private final UUID uuid;
   private final AtomicInteger vl = new AtomicInteger();
   private final BaselineProfile baseline = new BaselineProfile();
+  private volatile long lastPvpHitAt;
+  private volatile boolean lastTargetIsPlayer;
+  private volatile int cachedPing = -1;
 
   public PlayerData(UUID uuid) {
     this.uuid = uuid;
@@ -35,5 +38,22 @@ public class PlayerData {
 
   public void recordRotation(RotationData rot) {
     baseline.update(rot.getYawChange(), rot.getPitchChange());
+  }
+
+  public void markHit(boolean targetIsPlayer) {
+    lastPvpHitAt = System.currentTimeMillis();
+    lastTargetIsPlayer = targetIsPlayer;
+  }
+
+  public boolean inRecentPvp(long ms) {
+    return lastTargetIsPlayer && System.currentTimeMillis() - lastPvpHitAt <= ms;
+  }
+
+  public void setCachedPing(int ping) {
+    this.cachedPing = ping;
+  }
+
+  public int getCachedPing() {
+    return cachedPing;
   }
 }

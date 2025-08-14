@@ -112,4 +112,25 @@ public class MitigationManager {
     long diff = exp - System.currentTimeMillis();
     return Math.max(0L, diff);
   }
+
+  public void reset(UUID uuid) {
+    mitigated.remove(uuid);
+    Double base = baseValues.remove(uuid);
+    BukkitTask applyTask = applyTasks.remove(uuid);
+    if (applyTask != null) {
+      applyTask.cancel();
+    }
+    BukkitTask removeTask = removeTasks.remove(uuid);
+    if (removeTask != null) {
+      removeTask.cancel();
+    }
+    removeExpires.remove(uuid);
+    Player player = Bukkit.getPlayer(uuid);
+    if (player != null && base != null) {
+      AttributeInstance attr = player.getAttribute(Attribute.GENERIC_ATTACK_DAMAGE);
+      if (attr != null) {
+        attr.setBaseValue(base);
+      }
+    }
+  }
 }
