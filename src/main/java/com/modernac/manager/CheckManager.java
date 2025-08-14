@@ -88,13 +88,29 @@ public class CheckManager {
     if (data == null || list == null) {
       return;
     }
+    boolean processAim = true;
     if (packet instanceof RotationData) {
-      data.recordRotation((RotationData) packet);
+      RotationData rot = (RotationData) packet;
+      data.recordRotation(rot);
+      int ping = data.getCachedPing();
+      double[] tpsArr = org.bukkit.Bukkit.getTPS();
+      double tps =
+          tpsArr.length > 0 && Double.isFinite(tpsArr[0]) ? tpsArr[0] : 20.0;
+      processAim =
+          data.inRecentPvp(500)
+              && ping > 0
+              && ping <= 180
+              && tps >= 18.0
+              && Double.isFinite(rot.getYawChange());
     }
+    final boolean aimOk = processAim;
     executor.execute(
         () -> {
           for (Check check : list) {
             try {
+              if (check instanceof com.modernac.checks.aim.AimCheck && !aimOk) {
+                continue;
+              }
               check.handle(packet);
             } catch (Throwable t) {
               plugin.getDetectionLogger().error("Exception in " + check.getName() + ".handle", t);
@@ -105,5 +121,9 @@ public class CheckManager {
 
   public void shutdown() {
     executor.shutdownNow();
+  }
+
+  public PlayerData getPlayerData(UUID uuid) {
+    return players.get(uuid);
   }
 }

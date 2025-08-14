@@ -1,13 +1,12 @@
 package com.modernac.checks.aim;
 
 import com.modernac.ModernACPlugin;
+import com.modernac.engine.DetectionResult;
+import com.modernac.engine.Window;
 import com.modernac.player.PlayerData;
 import com.modernac.player.RotationData;
 import com.modernac.util.MathUtil;
 import java.util.Deque;
-import java.util.Locale;
-import org.bukkit.Bukkit;
-import org.bukkit.entity.Player;
 
 public class ZFactorCheck extends AimCheck {
 
@@ -15,8 +14,10 @@ public class ZFactorCheck extends AimCheck {
     super(plugin, data, "zFactor", false);
   }
 
-  private static final int MIN_SAMPLES = 8;
+  private static final int MIN_SAMPLES = 20;
   private static final double EPS = 1e-6;
+  private static final int STREAK_LIMIT = 2;
+  private int streak;
 
   private final Deque<Double> samples = new java.util.ArrayDeque<>();
 
@@ -28,14 +29,6 @@ public class ZFactorCheck extends AimCheck {
     RotationData rot = (RotationData) packet;
     double yaw = rot.getYawChange();
     if (!Double.isFinite(yaw)) {
-      return;
-    }
-    Player player = Bukkit.getPlayer(data.getUuid());
-    double[] tpsArr = Bukkit.getTPS();
-    double tps = tpsArr.length > 0 && Double.isFinite(tpsArr[0]) ? tpsArr[0] : 20.0;
-    int ping = player != null ? player.getPing() : 0;
-    if (ping > 180 || tps < 18.0) {
-      trace("gate-fail ping=" + ping + ", tps=" + String.format(Locale.US, "%.1f", tps));
       return;
     }
     synchronized (samples) {
@@ -62,11 +55,28 @@ public class ZFactorCheck extends AimCheck {
       return;
     }
     double std = Math.sqrt(var);
+    if (std < 0.03) {
+      return;
+    }
     double z = Math.abs(latest - mean) / std;
     if (z >= 6.0) {
-      fail(100, true);
+      streak++;
+      if (streak >= STREAK_LIMIT) {
+        streak = 0;
+        DetectionResult result =
+            new DetectionResult(getName(), 1.0, Window.SHORT, true, true, true);
+        fail(result);
+      }
     } else if (z >= 4.0) {
-      fail(50, true);
+      streak++;
+      if (streak >= STREAK_LIMIT) {
+        streak = 0;
+        DetectionResult result =
+            new DetectionResult(getName(), 0.9, Window.SHORT, true, true, true);
+        fail(result);
+      }
+    } else {
+      streak = 0;
     }
   }
 }

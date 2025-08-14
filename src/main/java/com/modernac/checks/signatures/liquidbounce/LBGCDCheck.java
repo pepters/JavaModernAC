@@ -9,9 +9,6 @@ import com.modernac.player.RotationData;
 import com.modernac.util.MathUtil;
 import java.util.ArrayDeque;
 import java.util.Deque;
-import java.util.Locale;
-import org.bukkit.Bukkit;
-import org.bukkit.entity.Player;
 
 /** Detects LiquidBounce's stable rotation quantization via GCD analysis. */
 public class LBGCDCheck extends AimCheck {
@@ -19,8 +16,11 @@ public class LBGCDCheck extends AimCheck {
   private final Deque<Integer> buffer = new ArrayDeque<>();
 
   public LBGCDCheck(ModernACPlugin plugin, PlayerData data) {
-    super(plugin, data, "LB_GCD", false);
+    super(plugin, data, "LBGCD", false);
   }
+
+  private static final int STREAK_LIMIT = 2;
+  private int streak;
 
   @Override
   public void handle(Object packet) {
@@ -28,14 +28,6 @@ public class LBGCDCheck extends AimCheck {
     RotationData rot = (RotationData) packet;
     double yaw = Math.abs(rot.getYawChange());
     if (!Double.isFinite(yaw)) {
-      return;
-    }
-    Player player = Bukkit.getPlayer(data.getUuid());
-    double[] tpsArr = Bukkit.getTPS();
-    double tps = tpsArr.length > 0 && Double.isFinite(tpsArr[0]) ? tpsArr[0] : 20.0;
-    int ping = player != null ? player.getPing() : 0;
-    if (ping > 180 || tps < 18.0) {
-      trace("gate-fail ping=" + ping + ", tps=" + String.format(Locale.US, "%.1f", tps));
       return;
     }
     int quant = (int) Math.round(yaw * SCALE);
@@ -56,8 +48,15 @@ public class LBGCDCheck extends AimCheck {
     }
     double iqr = MathUtil.iqr(arr);
     if (gcd > 0 && iqr < 0.05) {
-      DetectionResult result = new DetectionResult("GCD", 1.0, Window.LONG, true, true, true);
-      fail(result);
+      streak++;
+      if (streak >= STREAK_LIMIT) {
+        streak = 0;
+        DetectionResult result =
+            new DetectionResult(getName(), 1.0, Window.LONG, true, true, true);
+        fail(result);
+      }
+    } else {
+      streak = 0;
     }
     synchronized (buffer) {
       buffer.clear();

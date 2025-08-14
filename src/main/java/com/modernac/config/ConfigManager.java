@@ -6,9 +6,14 @@ import org.bukkit.configuration.file.FileConfiguration;
 
 public class ConfigManager {
   private final FileConfiguration config;
+  private int minFamiliesForBan;
 
   public ConfigManager(ModernACPlugin plugin) {
     this.config = plugin.getConfig();
+    this.minFamiliesForBan =
+        this.config.getInt(
+            "punishment.min_families_for_ban",
+            this.config.getInt("punishment.min-families-for-ban", 2));
   }
 
   public String getKickCommand() {
@@ -129,6 +134,10 @@ public class ConfigManager {
 
   public boolean isAlertLogToFile() {
     return config.getBoolean("logging.alerts.to_file", true);
+  }
+
+  public int getMinFamiliesForBan() {
+    return minFamiliesForBan;
   }
 
   public int getMinIndependentFamiliesForAction() {

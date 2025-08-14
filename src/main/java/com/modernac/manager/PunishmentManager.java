@@ -49,6 +49,10 @@ public class PunishmentManager {
                     String name = Optional.ofNullable(op.getName()).orElse(uuid.toString());
                     String command =
                         plugin.getConfigManager().getBanCommand().replace("{player}", name);
+                    plugin.getDetectionEngine().reset(uuid);
+                    plugin.getAlertEngine().clear(uuid);
+                    plugin.getMitigationManager().reset(uuid);
+                    plugin.exemptPlayer(uuid, 60_000L);
                     Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command);
                   }
                 },
