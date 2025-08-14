@@ -5,7 +5,6 @@ import com.github.retrooper.packetevents.event.simple.PacketPlayReceiveEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.protocol.player.DiggingAction;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientClickWindow;
-import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientInteractEntity;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPlayerDigging;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPlayerPositionAndRotation;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPlayerRotation;
@@ -44,11 +43,6 @@ public class PacketListenerImpl extends SimplePacketListenerAbstract {
       return;
     }
     if (type == PacketType.Play.Client.INTERACT_ENTITY) {
-      var w = new WrapperPlayClientInteractEntity(event);
-      var action = w.getAction();
-      if (action == WrapperPlayClientInteractEntity.InteractAction.ATTACK) {
-        manager.handle(uuid, "ATTACK");
-      }
       return;
     }
     if (type == PacketType.Play.Client.PLAYER_DIGGING) {

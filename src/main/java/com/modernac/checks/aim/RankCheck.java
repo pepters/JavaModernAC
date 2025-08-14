@@ -11,7 +11,7 @@ import java.util.Arrays;
 import java.util.Deque;
 
 public class RankCheck extends AimCheck {
-  private static final String FAMILY = "AIM/Outliers";
+  private static final String FAMILY = "AIM/Outliers-SHORT";
 
   public RankCheck(ModernACPlugin plugin, PlayerData data) {
     super(plugin, data, "Rank", false);

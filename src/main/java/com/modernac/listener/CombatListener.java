@@ -19,6 +19,13 @@ public class CombatListener implements Listener {
   }
 
   @EventHandler
+  public void onAttack(EntityDamageByEntityEvent event) {
+    if (!(event.getDamager() instanceof Player)) return;
+    Player damager = (Player) event.getDamager();
+    plugin.getCheckManager().handle(damager.getUniqueId(), "ATTACK");
+  }
+
+  @EventHandler
   public void onDamage(EntityDamageEvent event) {
     if (!(event.getEntity() instanceof Player)) return;
     Player player = (Player) event.getEntity();
