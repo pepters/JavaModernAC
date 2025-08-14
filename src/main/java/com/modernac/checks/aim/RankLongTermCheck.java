@@ -1,12 +1,16 @@
 package com.modernac.checks.aim;
 
 import com.modernac.ModernACPlugin;
+import com.modernac.engine.DetectionResult;
+import com.modernac.engine.Window;
 import com.modernac.player.PlayerData;
 import com.modernac.player.RotationData;
 import com.modernac.util.MathUtil;
+
 import java.util.Arrays;
 import java.util.Deque;
 import java.util.Locale;
+
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
@@ -61,7 +65,7 @@ public class RankLongTermCheck extends AimCheck {
     }
     if (distinct < 50) {
       DetectionResult result =
-          new DetectionResult(FAMILY, 1.0, Window.LONG, true, true, true);
+          new DetectionResult(FAMILY, 0.9, Window.LONG, true, true, true);
       fail(result);
     }
   }
