@@ -10,7 +10,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -28,7 +28,6 @@ public class AlertEngine {
   private final Set<UUID> criticalFirst = ConcurrentHashMap.newKeySet();
   private int delayMin, delayMax, rateLimit, batchWindow;
   private int taskId = -1;
-  private final Random random = new Random();
 
   public AlertEngine(ModernACPlugin plugin) {
     this.plugin = plugin;
@@ -67,8 +66,9 @@ public class AlertEngine {
     if (critical && criticalFirst.add(uuid)) {
       detail.sendAfter = now;
     } else {
-      detail.sendAfter =
-          now + (delayMin + random.nextInt(Math.max(1, delayMax - delayMin + 1))) * 1000L;
+      int delta = delayMax - delayMin + 1;
+      int rand = ThreadLocalRandom.current().nextInt(Math.max(1, delta));
+      detail.sendAfter = now + (delayMin + rand) * 1000L;
     }
     queues.computeIfAbsent(uuid, k -> Collections.synchronizedList(new ArrayList<>())).add(detail);
     sendDebug(uuid, detail);
@@ -177,7 +177,9 @@ public class AlertEngine {
                     + sample.ping
                     + ", tps="
                     + String.format(Locale.US, "%.1f", sample.tps));
-        Bukkit.getConsoleSender().sendMessage(msg);
+        if (plugin.getConfigManager().isAlertLogToConsole()) {
+          Bukkit.getConsoleSender().sendMessage(msg);
+        }
         for (Player staff : Bukkit.getOnlinePlayers()) {
           if (staff.hasPermission(perm)) {
             staff.sendMessage(msg);

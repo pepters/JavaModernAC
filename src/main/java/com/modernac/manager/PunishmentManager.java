@@ -3,7 +3,7 @@ package com.modernac.manager;
 import com.modernac.ModernACPlugin;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import org.bukkit.Bukkit;
@@ -13,7 +13,6 @@ import org.bukkit.scheduler.BukkitTask;
 /** Handles delayed punishments with tier escalation. */
 public class PunishmentManager {
   private final ModernACPlugin plugin;
-  private final Random random = new Random();
   private final Map<UUID, BukkitTask> tasks = new ConcurrentHashMap<>();
   private final Map<UUID, PunishmentTier> activeTier = new ConcurrentHashMap<>();
   private final Map<UUID, Long> expires = new ConcurrentHashMap<>();
@@ -33,7 +32,8 @@ public class PunishmentManager {
     int[] range = plugin.getConfigManager().getTierDelaySeconds(tier);
     int min = range[0];
     int max = range[1];
-    long delaySeconds = min + random.nextInt(Math.max(1, max - min + 1));
+    int delta = Math.max(1, max - min + 1);
+    long delaySeconds = min + ThreadLocalRandom.current().nextInt(delta);
     long runAt = System.currentTimeMillis() + delaySeconds * 1000L;
     long delayTicks = delaySeconds * 20L;
     BukkitTask task =

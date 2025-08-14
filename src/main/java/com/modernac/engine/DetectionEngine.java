@@ -94,7 +94,7 @@ public class DetectionEngine {
 
   private EvalOutcome evaluate(UUID uuid, PlayerRecord record, int ping, double tps) {
     ConfigManager cfg = plugin.getConfigManager();
-    int requiredFamilies = cfg.getMinFamiliesForBan();
+    int requiredFamilies = cfg.getMinIndependentFamiliesForAction();
     boolean requireMultiWindow = cfg.isMultiWindowConfirmationRequired();
     int familyCount = 0;
     int windowCount = 0;

@@ -28,7 +28,7 @@ public class ConfigManager {
   }
 
   public boolean isExperimentalDetections() {
-    return config.getBoolean("checks.experimental_detections", true);
+    return config.getBoolean("checks.experimental_detections", false);
   }
 
   public CombatTolerance getCombatTolerance() {
@@ -111,10 +111,6 @@ public class ConfigManager {
     return config.getBoolean("logging.detection_trace.enabled", false);
   }
 
-  public boolean isTraceToConsole() {
-    return config.getBoolean("logging.detection_trace.to_console", false);
-  }
-
   public boolean isTraceToFile() {
     return config.getBoolean("logging.detection_trace.to_file", false);
   }
@@ -135,8 +131,8 @@ public class ConfigManager {
     return config.getBoolean("logging.alerts.to_file", true);
   }
 
-  public int getMinFamiliesForBan() {
-    return config.getInt("policy.min_independent_families_for_ban", 2);
+  public int getMinIndependentFamiliesForAction() {
+    return config.getInt("policy.min_independent_families_for_action", 2);
   }
 
   public boolean isMultiWindowConfirmationRequired() {
