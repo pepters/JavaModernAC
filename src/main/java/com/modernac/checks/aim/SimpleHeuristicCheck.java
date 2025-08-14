@@ -7,7 +7,7 @@ import com.modernac.player.RotationData;
 public class SimpleHeuristicCheck extends AimCheck {
 
   public SimpleHeuristicCheck(ModernACPlugin plugin, PlayerData data) {
-    super(plugin, data, "Simple heuristic", false);
+    super(plugin, data, "Simple heuristic", true);
   }
 
   @Override

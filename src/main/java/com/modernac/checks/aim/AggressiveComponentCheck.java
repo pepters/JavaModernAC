@@ -7,7 +7,7 @@ import com.modernac.player.RotationData;
 public class AggressiveComponentCheck extends AimCheck {
 
   public AggressiveComponentCheck(ModernACPlugin plugin, PlayerData data) {
-    super(plugin, data, "Aggressive Component", false);
+    super(plugin, data, "Aggressive Component", true);
   }
 
   @Override

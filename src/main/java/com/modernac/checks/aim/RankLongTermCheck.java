@@ -1,16 +1,21 @@
 package com.modernac.checks.aim;
 
 import com.modernac.ModernACPlugin;
+import com.modernac.engine.DetectionResult;
+import com.modernac.engine.Window;
 import com.modernac.player.PlayerData;
 import com.modernac.player.RotationData;
 import com.modernac.util.MathUtil;
+
 import java.util.Arrays;
 import java.util.Deque;
 import java.util.Locale;
+
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
 public class RankLongTermCheck extends AimCheck {
+  private static final String FAMILY = "AIM/Outliers";
 
   public RankLongTermCheck(ModernACPlugin plugin, PlayerData data) {
     super(plugin, data, "Rank Long-term", false);
@@ -59,7 +64,9 @@ public class RankLongTermCheck extends AimCheck {
       }
     }
     if (distinct < 50) {
-      fail(1, true);
+      DetectionResult result =
+          new DetectionResult(FAMILY, 0.9, Window.LONG, true, true, true);
+      fail(result);
     }
   }
 }

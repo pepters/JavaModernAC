@@ -3,13 +3,16 @@ package com.modernac.player;
 import com.modernac.model.BaselineProfile;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.bukkit.Bukkit;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.Player;
 
 public class PlayerData {
   private final UUID uuid;
   private final AtomicInteger vl = new AtomicInteger();
   private final BaselineProfile baseline = new BaselineProfile();
   private volatile long lastPvpHitAt;
-  private volatile boolean lastTargetIsPlayer;
+  private volatile UUID lastTargetUuid;
   private volatile int cachedPing = -1;
 
   public PlayerData(UUID uuid) {
@@ -40,13 +43,21 @@ public class PlayerData {
     baseline.update(rot.getYawChange(), rot.getPitchChange());
   }
 
-  public void markHit(boolean targetIsPlayer) {
+  public void markHit(Entity target) {
     lastPvpHitAt = System.currentTimeMillis();
-    lastTargetIsPlayer = targetIsPlayer;
+    if (target instanceof Player) {
+      lastTargetUuid = target.getUniqueId();
+    } else {
+      lastTargetUuid = null;
+    }
   }
 
   public boolean inRecentPvp(long ms) {
-    return lastTargetIsPlayer && System.currentTimeMillis() - lastPvpHitAt <= ms;
+    return lastTargetUuid != null && System.currentTimeMillis() - lastPvpHitAt <= ms;
+  }
+
+  public Entity getLastTarget() {
+    return lastTargetUuid != null ? Bukkit.getEntity(lastTargetUuid) : null;
   }
 
   public void setCachedPing(int ping) {

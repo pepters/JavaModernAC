@@ -11,6 +11,7 @@ import java.util.Arrays;
 import java.util.Deque;
 
 public class RankCheck extends AimCheck {
+  private static final String FAMILY = "AIM/Outliers";
 
   public RankCheck(ModernACPlugin plugin, PlayerData data) {
     super(plugin, data, "Rank", false);
@@ -55,7 +56,7 @@ public class RankCheck extends AimCheck {
       if (streak >= STREAK_LIMIT) {
         streak = 0;
         DetectionResult result =
-            new DetectionResult(getName(), 1.0, Window.SHORT, true, true, true);
+            new DetectionResult(FAMILY, 1.0, Window.SHORT, true, true, true);
         fail(result);
       }
     } else if (pct <= 0.05 || pct >= 0.95) {
@@ -63,7 +64,7 @@ public class RankCheck extends AimCheck {
       if (streak >= STREAK_LIMIT) {
         streak = 0;
         DetectionResult result =
-            new DetectionResult(getName(), 0.9, Window.SHORT, true, true, true);
+            new DetectionResult(FAMILY, 0.9, Window.SHORT, true, true, true);
         fail(result);
       }
     } else {

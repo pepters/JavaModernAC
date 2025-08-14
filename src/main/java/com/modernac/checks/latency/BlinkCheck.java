@@ -8,7 +8,7 @@ public class BlinkCheck extends LatencyCheck {
   private long lastPacket;
 
   public BlinkCheck(ModernACPlugin plugin, PlayerData data) {
-    super(plugin, data, "Blink");
+    super(plugin, data, "Blink", true);
   }
 
   @Override

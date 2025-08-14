@@ -7,7 +7,7 @@ import com.modernac.player.RotationData;
 public class RandomizerFlawHeuristicCheck extends AimCheck {
 
   public RandomizerFlawHeuristicCheck(ModernACPlugin plugin, PlayerData data) {
-    super(plugin, data, "Randomizer flaw Heuristic", false);
+    super(plugin, data, "Randomizer flaw Heuristic", true);
   }
 
   @Override

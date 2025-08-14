@@ -44,6 +44,7 @@ public class PlayerListener implements Listener {
   public void onQuit(PlayerQuitEvent event) {
     Player player = event.getPlayer();
     plugin.getCheckManager().removePlayer(player.getUniqueId());
+    plugin.getDetectionEngine().reset(player.getUniqueId());
     plugin.getAlertEngine().clear(player.getUniqueId());
     plugin.getMitigationManager().reset(player.getUniqueId());
   }
@@ -55,7 +56,7 @@ public class PlayerListener implements Listener {
     PlayerData data = plugin.getCheckManager().getPlayerData(damager.getUniqueId());
     if (data != null) {
       Entity target = event.getEntity();
-      data.markHit(target instanceof Player);
+      data.markHit(target);
     }
   }
 
@@ -64,7 +65,7 @@ public class PlayerListener implements Listener {
     PlayerData data =
         plugin.getCheckManager().getPlayerData(event.getPlayer().getUniqueId());
     if (data != null) {
-      data.markHit(event.getRightClicked() instanceof Player);
+      data.markHit(event.getRightClicked());
     }
   }
 

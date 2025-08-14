@@ -1,6 +1,8 @@
 package com.modernac.checks.aim;
 
 import com.modernac.ModernACPlugin;
+import com.modernac.engine.DetectionResult;
+import com.modernac.engine.Window;
 import com.modernac.player.PlayerData;
 import com.modernac.player.RotationData;
 import com.modernac.util.MathUtil;
@@ -12,12 +14,13 @@ import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
 public class DistinctCheck extends AimCheck {
+  private static final String FAMILY = "AIM/Patterns";
 
   public DistinctCheck(ModernACPlugin plugin, PlayerData data) {
     super(plugin, data, "Distinct", false);
   }
 
-  private static final int MIN_SAMPLES = 10;
+  private static final int MIN_SAMPLES = 8;
   private static final double EPS = 1e-6;
 
   private final Deque<Double> lastYaw = new ArrayDeque<>();
@@ -63,7 +66,9 @@ public class DistinctCheck extends AimCheck {
       }
     }
     if (distinct <= 2) {
-      fail(1, true);
+      DetectionResult result =
+          new DetectionResult(FAMILY, 0.9, Window.SHORT, true, true, true);
+      fail(result);
     }
   }
 }

@@ -9,7 +9,7 @@ public class LagrangeCheck extends LatencyCheck {
   private int streak;
 
   public LagrangeCheck(ModernACPlugin plugin, PlayerData data) {
-    super(plugin, data, "Lagrange");
+    super(plugin, data, "Lagrange", false);
   }
 
   @Override

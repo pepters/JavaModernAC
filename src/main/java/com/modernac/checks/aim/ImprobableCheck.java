@@ -7,7 +7,7 @@ import com.modernac.player.RotationData;
 public class ImprobableCheck extends AimCheck {
 
   public ImprobableCheck(ModernACPlugin plugin, PlayerData data) {
-    super(plugin, data, "Improbable", false);
+    super(plugin, data, "Improbable", true);
   }
 
   @Override
