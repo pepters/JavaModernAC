@@ -57,13 +57,18 @@ public class ModernACPlugin extends JavaPlugin {
     this.lagCompensator =
         new LagCompensator(
             configManager.isLagCompEnabled(),
-            configManager.getLagCompAlpha(),
+            configManager.getLagAlpha(),
+            configManager.getLagJitterAlpha(),
             configManager.getLagCompDtBase(),
             configManager.getLagCompDtMin(),
             configManager.getLagCompDtMax(),
             configManager.getLagCompYawRelaxPerJitter(),
             configManager.getUnstableConnectionLimit(),
-            configManager.getTpsSoftGuard());
+            configManager.getTpsSoftGuard(),
+            configManager.getLagStableRtt(),
+            configManager.getLagStableJitter(),
+            configManager.getLagStableTps(),
+            configManager.getLagBackfillMs());
 
     PacketEvents.getAPI().init();
     // Регистрируем 2.9.x слушатель
@@ -174,13 +179,18 @@ public class ModernACPlugin extends JavaPlugin {
     this.lagCompensator =
         new LagCompensator(
             configManager.isLagCompEnabled(),
-            configManager.getLagCompAlpha(),
+            configManager.getLagAlpha(),
+            configManager.getLagJitterAlpha(),
             configManager.getLagCompDtBase(),
             configManager.getLagCompDtMin(),
             configManager.getLagCompDtMax(),
             configManager.getLagCompYawRelaxPerJitter(),
             configManager.getUnstableConnectionLimit(),
-            configManager.getTpsSoftGuard());
+            configManager.getTpsSoftGuard(),
+            configManager.getLagStableRtt(),
+            configManager.getLagStableJitter(),
+            configManager.getLagStableTps(),
+            configManager.getLagBackfillMs());
   }
 
   public void exemptPlayer(UUID uuid, long durationMs) {
