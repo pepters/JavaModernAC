@@ -14,6 +14,17 @@ lagcomp:
   dtMax: 90
   yawRelaxPerJitterMs: 0.00025
 
+lag:
+  alpha: 0.2
+  jitter:
+    alpha: 0.2
+  stable:
+    rtt: 160
+    jitter: 25
+    tps: 19.0
+  backfill:
+    ms: 75
+
 checks:
   experimental_detections: true
   combat_tolerance: "normal"

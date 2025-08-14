@@ -194,6 +194,35 @@ public class AcCommand implements CommandExecutor, TabCompleter {
                 false);
         sender.sendMessage(ChatColor.GREEN + "Dev alert queued for " + target.getName());
         return true;
+      case "lag":
+        if (!sender.hasPermission("ac.command.lag")) {
+          sender.sendMessage(plugin.getMessageManager().getMessage("commands.no_permission"));
+          return true;
+        }
+        if (args.length < 2) {
+          sender.sendMessage(plugin.getMessageManager().getMessage("commands.usage"));
+          return true;
+        }
+        target = Bukkit.getOfflinePlayer(args[1]);
+        if (target == null || (target.getName() == null && !target.isOnline())) {
+          sender.sendMessage(plugin.getMessageManager().getMessage("commands.player_not_found"));
+          return true;
+        }
+        LagCompensator.LagContext ctxLag =
+            plugin.getLagCompensator().estimate(target.getUniqueId());
+        sender.sendMessage(
+            ChatColor.YELLOW
+                + "Lag for "
+                + target.getName()
+                + ": rtt="
+                + ctxLag.rttMs
+                + "ms, jitter="
+                + String.format("%.1f", ctxLag.jitterMs)
+                + "ms, tps="
+                + String.format("%.1f", ctxLag.tps)
+                + ", stable="
+                + ctxLag.stable);
+        return true;
       default:
         sender.sendMessage(plugin.getMessageManager().getMessage("commands.usage"));
         return true;
@@ -204,7 +233,8 @@ public class AcCommand implements CommandExecutor, TabCompleter {
   public List<String> onTabComplete(
       CommandSender sender, Command command, String alias, String[] args) {
     if (args.length == 1) {
-      return Arrays.asList("info", "status", "inspect", "debug", "exempt", "reload", "devfake");
+      return Arrays.asList(
+          "info", "status", "inspect", "debug", "exempt", "reload", "devfake", "lag");
     }
     if (args.length == 2
         && (args[0].equalsIgnoreCase("info")
@@ -212,7 +242,8 @@ public class AcCommand implements CommandExecutor, TabCompleter {
             || args[0].equalsIgnoreCase("debug")
             || args[0].equalsIgnoreCase("exempt")
             || args[0].equalsIgnoreCase("inspect")
-            || args[0].equalsIgnoreCase("devfake"))) {
+            || args[0].equalsIgnoreCase("devfake")
+            || args[0].equalsIgnoreCase("lag"))) {
       List<String> names = new ArrayList<>();
       for (Player p : Bukkit.getOnlinePlayers()) {
         names.add(p.getName());

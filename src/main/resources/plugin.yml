@@ -10,7 +10,7 @@ commands:
     description: AntiCheat main command
     aliases: [anticheat]
     permission: ac.use
-    usage: /ac <info|debug|exempt|reload|devfake|status|inspect>
+    usage: /ac <info|debug|exempt|reload|devfake|status|inspect|lag>
 permissions:
   ac.use:
     description: Allows use of /ac command
@@ -29,6 +29,9 @@ permissions:
     default: op
   ac.command.reload:
     description: Use /ac reload
+    default: op
+  ac.command.lag:
+    description: Use /ac lag
     default: op
   modernac.dev:
     description: Access developer commands

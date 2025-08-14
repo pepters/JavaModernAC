@@ -43,7 +43,9 @@ public class PlayerData {
   }
 
   public void recordRotation(RotationData rot) {
-    baseline.update(rot.getYawChange(), rot.getPitchChange());
+    if (rot.isStable()) {
+      baseline.update(rot.getYawChange(), rot.getPitchChange());
+    }
   }
 
   public void markHit(boolean targetIsPlayer, UUID targetId, Vector unitToTarget) {

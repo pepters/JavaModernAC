@@ -105,7 +105,8 @@ public class CheckManager {
               && !player.isHandRaised()
               && player.getOpenInventory().getType()
                   == org.bukkit.event.inventory.InventoryType.CRAFTING
-              && Double.isFinite(rot.getYawChange());
+              && Double.isFinite(rot.getYawChange())
+              && rot.isStable();
     }
     final boolean aimOk = processAim;
     executor.execute(
