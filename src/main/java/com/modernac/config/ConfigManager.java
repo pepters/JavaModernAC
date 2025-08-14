@@ -6,14 +6,9 @@ import org.bukkit.configuration.file.FileConfiguration;
 
 public class ConfigManager {
   private final FileConfiguration config;
-  private int minFamiliesForBan;
 
   public ConfigManager(ModernACPlugin plugin) {
     this.config = plugin.getConfig();
-    this.minFamiliesForBan =
-        this.config.getInt(
-            "punishment.min_families_for_ban",
-            this.config.getInt("punishment.min-families-for-ban", 2));
   }
 
   public String getKickCommand() {
@@ -136,16 +131,20 @@ public class ConfigManager {
     return config.getBoolean("logging.alerts.to_file", true);
   }
 
-  public int getMinFamiliesForBan() {
-    return minFamiliesForBan;
-  }
-
   public int getMinIndependentFamiliesForAction() {
-    return config.getInt("policy.min_independent_families_for_action", 2);
+    return config.getInt(
+        "policy.min_independent_families_for_action",
+        config.getInt(
+            "punishment.min_families_for_ban",
+            config.getInt("punishment.min-families-for-ban", 2)));
   }
 
   public boolean isMultiWindowConfirmationRequired() {
-    return config.getBoolean("policy.require_multi_window_confirmation", true);
+    return config.getBoolean(
+        "policy.require_multi_window_confirmation",
+        config.getBoolean(
+            "punishment.require_multi_window_confirmation",
+            config.getBoolean("punishment.require-multi-window-confirmation", true)));
   }
 
   public PunishmentTier getCheckTier(String checkName) {
