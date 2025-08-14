@@ -15,6 +15,11 @@ policy:
   require_multi_window_confirmation: true
   hysteresis_drop_pct: 20
 
+punishment:
+  # Сколько различных семейств чеков должны одновременно подтвердиться,
+  # чтобы разрешить бан (CRITICAL пути и т.п.)
+  min_families_for_ban: 2
+
 mitigation:
   max_damage_reduction: 0.90
   apply_delay_seconds: [5, 15]
