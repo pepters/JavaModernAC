@@ -2,7 +2,7 @@ package com.modernac.manager;
 
 import com.modernac.ModernACPlugin;
 import java.util.Map;
-import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import org.bukkit.Bukkit;
@@ -18,7 +18,6 @@ public class MitigationManager {
   private final Map<UUID, BukkitTask> applyTasks = new ConcurrentHashMap<>();
   private final Map<UUID, BukkitTask> removeTasks = new ConcurrentHashMap<>();
   private final Map<UUID, Long> removeExpires = new ConcurrentHashMap<>();
-  private final Random random = new Random();
 
   public MitigationManager(ModernACPlugin plugin) {
     this.plugin = plugin;
@@ -33,7 +32,8 @@ public class MitigationManager {
     if (oldApply != null) oldApply.cancel();
     int applyMin = plugin.getConfigManager().getMitigationApplyDelayMin();
     int applyMax = plugin.getConfigManager().getMitigationApplyDelayMax();
-    long applyDelay = 20L * (applyMin + random.nextInt(Math.max(1, applyMax - applyMin + 1)));
+    int applyRange = Math.max(1, applyMax - applyMin + 1);
+    long applyDelay = 20L * (applyMin + ThreadLocalRandom.current().nextInt(applyRange));
     BukkitTask applyTask =
         Bukkit.getScheduler().runTaskLater(plugin, () -> apply(uuid), applyDelay);
     applyTasks.put(uuid, applyTask);
@@ -43,7 +43,8 @@ public class MitigationManager {
     if (oldRemove != null) oldRemove.cancel();
     int durMin = plugin.getConfigManager().getMitigationDurationMin();
     int durMax = plugin.getConfigManager().getMitigationDurationMax();
-    long duration = 20L * (durMin + random.nextInt(Math.max(1, durMax - durMin + 1)));
+    int durRange = Math.max(1, durMax - durMin + 1);
+    long duration = 20L * (durMin + ThreadLocalRandom.current().nextInt(durRange));
     long removeAt = System.currentTimeMillis() + duration * 50L;
     BukkitTask removeTask =
         Bukkit.getScheduler()

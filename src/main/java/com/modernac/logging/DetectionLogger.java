@@ -18,6 +18,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Level;
 import org.bukkit.Bukkit;
 
@@ -28,6 +29,7 @@ public class DetectionLogger {
   private final File alertFile;
   private final SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
   private final ExecutorService executor;
+  private final AtomicLong lastRejectLog = new AtomicLong();
   private final Map<UUID, RateLimiter> limits = new ConcurrentHashMap<>();
   private final Set<UUID> debugPlayers = ConcurrentHashMap.newKeySet();
 
@@ -56,7 +58,13 @@ public class DetectionLogger {
               t.setDaemon(true);
               return t;
             },
-            new ThreadPoolExecutor.DiscardPolicy());
+            (r, e) -> {
+              long now = System.currentTimeMillis();
+              long last = lastRejectLog.get();
+              if (now - last > 10_000L && lastRejectLog.compareAndSet(last, now)) {
+                plugin.getLogger().log(Level.SEVERE, "Logger queue full, dropping logs");
+              }
+            });
     reload();
   }
 

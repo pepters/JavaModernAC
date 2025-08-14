@@ -1,6 +1,8 @@
 package com.modernac.checks.aim;
 
 import com.modernac.ModernACPlugin;
+import com.modernac.engine.DetectionResult;
+import com.modernac.engine.Window;
 import com.modernac.player.PlayerData;
 import com.modernac.player.RotationData;
 import com.modernac.util.MathUtil;
@@ -52,10 +54,22 @@ public class RankCheck extends AimCheck {
     if (arr.length < MIN_SAMPLES) {
       return;
     }
-    Arrays.sort(arr);
-    int index = Arrays.binarySearch(arr, yaw);
-    if (index <= 0 || index >= arr.length - 1) {
-      fail(1, true);
+    double latest = arr[arr.length - 1];
+    double[] prev = Arrays.copyOf(arr, arr.length - 1);
+    Arrays.sort(prev);
+    int pos = Arrays.binarySearch(prev, latest);
+    if (pos < 0) {
+      pos = -pos - 1;
+    }
+    double pct = prev.length > 0 ? pos / (double) prev.length : 0.5;
+    if (pct <= 0.01 || pct >= 0.99) {
+      DetectionResult result =
+          new DetectionResult(getName(), 1.0, Window.SHORT, true, true, true);
+      fail(result);
+    } else if (pct <= 0.05 || pct >= 0.95) {
+      DetectionResult result =
+          new DetectionResult(getName(), 0.9, Window.SHORT, true, true, true);
+      fail(result);
     }
   }
 }
