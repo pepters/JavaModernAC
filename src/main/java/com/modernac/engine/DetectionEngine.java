@@ -5,14 +5,13 @@ import com.modernac.checks.Check;
 import com.modernac.config.ConfigManager;
 import com.modernac.engine.AlertEngine.AlertDetail;
 import com.modernac.manager.PunishmentTier;
-import com.modernac.util.LatencyGuard;
+import com.modernac.net.LagCompensator;
 import java.util.EnumMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import org.bukkit.Bukkit;
 
 /** Aggregates evidence from independent checks and applies policy logic. */
 public class DetectionEngine {
@@ -58,31 +57,18 @@ public class DetectionEngine {
     FamilyRecord fam = record.families.computeIfAbsent(result.getFamily(), f -> new FamilyRecord());
     double prev = fam.windowScores.getOrDefault(result.getWindow(), 0.0);
     fam.windowScores.put(result.getWindow(), Math.max(prev, result.getEvidenceScore()));
-    fam.latencyOK &= result.isLatencyOK();
-    fam.stabilityOK &= result.isStabilityOK();
     ConfigManager cfg = plugin.getConfigManager();
     PunishmentTier tier = cfg.getCheckTier(check.getName());
     if (tier.ordinal() < fam.tier.ordinal()) {
       fam.tier = tier;
     }
-    com.modernac.player.PlayerData pd = plugin.getCheckManager().getPlayerData(uuid);
-    int ping = pd != null ? pd.getCachedPing() : -1;
-    double[] tpsArr = Bukkit.getTPS();
-    double tps = tpsArr.length > 0 && Double.isFinite(tpsArr[0]) ? tpsArr[0] : 20.0;
-      EvalOutcome outcome = evaluate(uuid, record, ping, tps);
-      boolean stable =
-          ping > 0
-              && LatencyGuard.isStable(ping, tps, cfg.getUnstableConnectionLimit(), cfg.getTpsSoftGuard());
-      boolean alertEligible =
-          stable
-              && outcome.families >= cfg.getMinIndependentFamiliesForAction()
-              && (!cfg.isMultiWindowConfirmationRequired() || outcome.windows >= 2)
-              && outcome.highest != null
-              && (outcome.highest == PunishmentTier.HIGH
-                  || outcome.highest == PunishmentTier.CRITICAL);
-      if (!stable) {
-        outcome.punish = false;
-      }
+    LagCompensator.LagContext ctx = plugin.getLagCompensator().estimate(uuid);
+    EvalOutcome outcome = evaluate(uuid, record, ctx);
+    boolean alertEligible =
+        outcome.families >= cfg.getMinIndependentFamiliesForAction()
+            && (!cfg.isMultiWindowConfirmationRequired() || outcome.windows >= 2)
+            && outcome.highest != null
+            && (outcome.highest == PunishmentTier.HIGH || outcome.highest == PunishmentTier.CRITICAL);
     if (alertEligible) {
       double conf = outcome.highest == PunishmentTier.CRITICAL ? 1.0 : 0.9;
       AlertDetail detail =
@@ -90,10 +76,10 @@ public class DetectionEngine {
               result.getFamily(),
               result.getWindow().name(),
               conf,
-              ping,
-              tps,
+              ctx.rttMs,
+              ctx.tps,
               outcome.highest,
-              outcome.soft);
+              ctx.soft);
       plugin.getAlertEngine().enqueue(uuid, detail, outcome.highest == PunishmentTier.CRITICAL);
     }
     plugin.getMitigationManager().mitigate(uuid, outcome.reduction);
@@ -104,7 +90,8 @@ public class DetectionEngine {
     }
   }
 
-  private EvalOutcome evaluate(UUID uuid, PlayerRecord record, int ping, double tps) {
+  private EvalOutcome evaluate(
+      UUID uuid, PlayerRecord record, LagCompensator.LagContext ctx) {
     ConfigManager cfg = plugin.getConfigManager();
     int requiredFamilies = cfg.getMinIndependentFamiliesForAction();
     boolean requireMultiWindow = cfg.isMultiWindowConfirmationRequired();
@@ -113,16 +100,23 @@ public class DetectionEngine {
     int windowCount = 0;
     double total = 0.0;
     PunishmentTier highest = null;
+    double env =
+        clamp(1.0 - (ctx.jitterMs / 200.0) - (Math.max(0, ctx.rttMs - 120) / 400.0), 0.6, 1.0);
     for (Map.Entry<String, FamilyRecord> e : record.families.entrySet()) {
       String famName = e.getKey();
       FamilyRecord fam = e.getValue();
-      double famScore =
-          fam.windowScores.values().stream().mapToDouble(Double::doubleValue).max().orElse(0.0);
+      double maxWindowScore = 0.0;
       int famWindows = 0;
       for (double v : fam.windowScores.values()) {
-        if (v >= 0.90) famWindows++;
+        if (v > maxWindowScore) {
+          maxWindowScore = v;
+        }
+        if (v >= 0.90) {
+          famWindows++;
+        }
       }
-      if (fam.latencyOK && fam.stabilityOK && famScore >= 0.90) {
+      double famScore = maxWindowScore * env;
+      if (famScore >= 0.90) {
         familyCount++;
         if (NON_HEURISTIC.contains(famName)) {
           familyCountNonHeu++;
@@ -140,7 +134,7 @@ public class DetectionEngine {
     if (maxReduction > 1) maxReduction = 1;
     int reduction = (int) Math.round(avg * maxReduction * 100);
 
-    boolean soft = ping > cfg.getUnstableConnectionLimit() || tps < cfg.getTpsSoftGuard();
+    boolean soft = ctx.soft;
     if (soft && highest != null) {
       if (highest == PunishmentTier.CRITICAL) {
         highest = PunishmentTier.HIGH;
@@ -156,6 +150,10 @@ public class DetectionEngine {
             && highest != PunishmentTier.EXPERIMENTAL;
     record.currentTier = punish ? highest : null;
     return new EvalOutcome(soft, reduction, highest, punish, familyCountNonHeu, windowCount);
+  }
+
+  private static double clamp(double v, double lo, double hi) {
+    return Math.max(lo, Math.min(hi, v));
   }
 
   private static class EvalOutcome {
@@ -218,18 +216,10 @@ public class DetectionEngine {
       longMax = Math.max(longMax, fam.windowScores.getOrDefault(Window.LONG, 0.0));
       veryLongMax = Math.max(veryLongMax, fam.windowScores.getOrDefault(Window.VERY_LONG, 0.0));
     }
-    int ping = -1;
-    com.modernac.player.PlayerData pd = plugin.getCheckManager().getPlayerData(uuid);
-    if (pd != null) {
-      ping = pd.getCachedPing();
-    }
-    double[] tpsArr = org.bukkit.Bukkit.getTPS();
-    double tps = tpsArr.length > 0 && Double.isFinite(tpsArr[0]) ? tpsArr[0] : 20.0;
     ConfigManager cfg = plugin.getConfigManager();
+    LagCompensator.LagContext ctx = plugin.getLagCompensator().estimate(uuid);
     boolean stable =
-        ping > 0
-            && LatencyGuard.isStable(
-                ping, tps, cfg.getUnstableConnectionLimit(), cfg.getTpsSoftGuard());
+        ctx.rttMs < cfg.getUnstableConnectionLimit() && ctx.tps >= cfg.getTpsSoftGuard();
     return new DetectionSummary(stable, stable, shortMax, longMax, veryLongMax);
   }
 
@@ -261,8 +251,6 @@ public class DetectionEngine {
 
   private static class FamilyRecord {
     final Map<Window, Double> windowScores = new EnumMap<>(Window.class);
-    boolean latencyOK = true;
-    boolean stabilityOK = true;
     PunishmentTier tier = PunishmentTier.MEDIUM;
   }
 }

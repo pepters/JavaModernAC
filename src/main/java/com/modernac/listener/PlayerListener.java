@@ -24,11 +24,14 @@ public class PlayerListener implements Listener {
         .runTaskTimer(
             plugin,
             () -> {
+              double tps = Bukkit.getTPS()[0];
               for (Player p : Bukkit.getOnlinePlayers()) {
                 PlayerData data =
                     plugin.getCheckManager().getPlayerData(p.getUniqueId());
                 if (data != null) {
-                  data.setCachedPing(p.getPing());
+                  int ping = p.getPing();
+                  data.setCachedPing(ping);
+                  plugin.getLagCompensator().sample(p.getUniqueId(), ping, tps);
                 }
               }
             },

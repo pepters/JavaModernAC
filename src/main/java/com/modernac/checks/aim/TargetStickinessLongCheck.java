@@ -3,6 +3,7 @@ package com.modernac.checks.aim;
 import com.modernac.ModernACPlugin;
 import com.modernac.engine.DetectionResult;
 import com.modernac.engine.Window;
+import com.modernac.net.LagCompensator;
 import com.modernac.player.PlayerData;
 import com.modernac.player.RotationData;
 import java.util.ArrayDeque;
@@ -43,12 +44,7 @@ public class TargetStickinessLongCheck extends AimCheck {
     if (!Double.isFinite(yaw)) {
       return;
     }
-    int ping = data.getCachedPing();
-    double[] tpsArr = Bukkit.getTPS();
-    double tps = tpsArr.length > 0 && Double.isFinite(tpsArr[0]) ? tpsArr[0] : 20.0;
-    if (ping <= 0 || ping > 180 || tps < 18.0) {
-      return;
-    }
+    LagCompensator.LagContext ctx = plugin.getLagCompensator().estimate(data.getUuid());
     Player player = Bukkit.getPlayer(data.getUuid());
     Entity tgt = data.getLastTarget();
     if (player == null || tgt == null) {
@@ -64,7 +60,7 @@ public class TargetStickinessLongCheck extends AimCheck {
     if (!moved) {
       return;
     }
-    boolean idle = Math.abs(yaw) <= YAW_IDLE_MAX;
+    boolean idle = Math.abs(yaw) <= (YAW_IDLE_MAX + ctx.yawRelax);
     synchronized (samples) {
       if (samples.size() >= 200) {
         boolean old = samples.pollFirst();
@@ -73,12 +69,13 @@ public class TargetStickinessLongCheck extends AimCheck {
       samples.addLast(idle);
       if (idle) idleCount++;
     }
-    evaluate();
+    evaluate(ctx);
   }
 
-  private void evaluate() {
+  private void evaluate(LagCompensator.LagContext ctx) {
     int size = samples.size();
-    if (size < MIN) {
+    int req = ctx.rttMs > 150 ? (int) Math.ceil(MIN * 1.05) : MIN;
+    if (size < req) {
       return;
     }
     double rate = idleCount / (double) size;
@@ -86,22 +83,27 @@ public class TargetStickinessLongCheck extends AimCheck {
     if (now - lastFail < COOLDOWN_MS) {
       return;
     }
+    double env = clamp(1.0 - ctx.jitterMs / 120.0, 0.7, 1.0);
     if (rate >= RATE_CRIT) {
       hits++;
       if (hits >= HITS_REQ) {
         hits = 0;
         lastFail = now;
-        fail(new DetectionResult(FAMILY, 1.0, Window.LONG, true, true, true));
+        fail(new DetectionResult(FAMILY, 1.0 * env, Window.LONG, true, true, true));
       }
     } else if (rate >= RATE_HIGH) {
       hits++;
       if (hits >= HITS_REQ) {
         hits = 0;
         lastFail = now;
-        fail(new DetectionResult(FAMILY, 0.9, Window.LONG, true, true, true));
+        fail(new DetectionResult(FAMILY, 0.9 * env, Window.LONG, true, true, true));
       }
     } else {
       hits = 0;
     }
+  }
+
+  private static double clamp(double v, double lo, double hi) {
+    return Math.max(lo, Math.min(hi, v));
   }
 }

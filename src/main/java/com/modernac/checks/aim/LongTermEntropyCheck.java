@@ -3,6 +3,7 @@ package com.modernac.checks.aim;
 import com.modernac.ModernACPlugin;
 import com.modernac.engine.DetectionResult;
 import com.modernac.engine.Window;
+import com.modernac.net.LagCompensator;
 import com.modernac.player.PlayerData;
 import com.modernac.player.RotationData;
 import com.modernac.util.MathUtil;
@@ -48,12 +49,7 @@ public class LongTermEntropyCheck extends AimCheck {
     if (!Double.isFinite(yaw)) {
       return;
     }
-    int ping = data.getCachedPing();
-    double[] tpsArr = Bukkit.getTPS();
-    double tps = tpsArr.length > 0 && Double.isFinite(tpsArr[0]) ? tpsArr[0] : 20.0;
-    if (ping <= 0 || ping > 180 || tps < 18.0) {
-      return;
-    }
+    LagCompensator.LagContext ctx = plugin.getLagCompensator().estimate(data.getUuid());
     synchronized (longWindow) {
       if (longWindow.size() >= 128) {
         longWindow.pollFirst();
@@ -66,11 +62,11 @@ public class LongTermEntropyCheck extends AimCheck {
       }
       vlongWindow.addLast(yaw);
     }
-    analyze(Window.LONG);
-    analyze(Window.VERY_LONG);
+    analyze(Window.LONG, ctx);
+    analyze(Window.VERY_LONG, ctx);
   }
 
-  private void analyze(Window window) {
+  private void analyze(Window window, LagCompensator.LagContext ctx) {
     Deque<Double> q = window == Window.LONG ? longWindow : vlongWindow;
     double[] arr = MathUtil.snapshotNonNull(q);
     int min = window == Window.LONG ? MIN_LONG : MIN_VLONG;
@@ -92,14 +88,16 @@ public class LongTermEntropyCheck extends AimCheck {
         if (hitsLong >= HITS_REQ) {
           hitsLong = 0;
           lastFailLong = now;
-          fail(new DetectionResult(FAMILY_LONG, 1.0, Window.LONG, true, true, true));
+          double e = 1.0 * clamp(1 - ctx.jitterMs / 200.0, 0.6, 1.0);
+          fail(new DetectionResult(FAMILY_LONG, e, Window.LONG, true, true, true));
         }
       } else if (h < H_LONG_HIGH) {
         hitsLong++;
         if (hitsLong >= HITS_REQ) {
           hitsLong = 0;
           lastFailLong = now;
-          fail(new DetectionResult(FAMILY_LONG, 0.9, Window.LONG, true, true, true));
+          double e = 0.9 * clamp(1 - ctx.jitterMs / 200.0, 0.6, 1.0);
+          fail(new DetectionResult(FAMILY_LONG, e, Window.LONG, true, true, true));
         }
       } else {
         hitsLong = 0;
@@ -113,14 +111,16 @@ public class LongTermEntropyCheck extends AimCheck {
         if (hitsVLong >= HITS_REQ) {
           hitsVLong = 0;
           lastFailVLong = now;
-          fail(new DetectionResult(FAMILY_VLONG, 1.0, Window.VERY_LONG, true, true, true));
+          double e = 1.0 * clamp(1 - ctx.jitterMs / 200.0, 0.6, 1.0);
+          fail(new DetectionResult(FAMILY_VLONG, e, Window.VERY_LONG, true, true, true));
         }
       } else if (h < H_VLONG_HIGH) {
         hitsVLong++;
         if (hitsVLong >= HITS_REQ) {
           hitsVLong = 0;
           lastFailVLong = now;
-          fail(new DetectionResult(FAMILY_VLONG, 0.9, Window.VERY_LONG, true, true, true));
+          double e = 0.9 * clamp(1 - ctx.jitterMs / 200.0, 0.6, 1.0);
+          fail(new DetectionResult(FAMILY_VLONG, e, Window.VERY_LONG, true, true, true));
         }
       } else {
         hitsVLong = 0;
@@ -165,5 +165,9 @@ public class LongTermEntropyCheck extends AimCheck {
       }
     }
     return h;
+  }
+
+  private static double clamp(double v, double lo, double hi) {
+    return Math.max(lo, Math.min(hi, v));
   }
 }

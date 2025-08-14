@@ -3,6 +3,7 @@ package com.modernac.checks.aim;
 import com.modernac.ModernACPlugin;
 import com.modernac.engine.DetectionResult;
 import com.modernac.engine.Window;
+import com.modernac.net.LagCompensator;
 import com.modernac.player.PlayerData;
 import com.modernac.player.RotationData;
 import com.modernac.util.MathUtil;
@@ -42,12 +43,7 @@ public class QuantizationLongCheck extends AimCheck {
     if (!Double.isFinite(yaw)) {
       return;
     }
-    int ping = data.getCachedPing();
-    double[] tpsArr = Bukkit.getTPS();
-    double tps = tpsArr.length > 0 && Double.isFinite(tpsArr[0]) ? tpsArr[0] : 20.0;
-    if (ping <= 0 || ping > 180 || tps < 18.0) {
-      return;
-    }
+    LagCompensator.LagContext ctx = plugin.getLagCompensator().estimate(data.getUuid());
     synchronized (longWindow) {
       if (longWindow.size() >= 256) longWindow.pollFirst();
       longWindow.addLast(yaw);
@@ -56,11 +52,11 @@ public class QuantizationLongCheck extends AimCheck {
       if (vlongWindow.size() >= 512) vlongWindow.pollFirst();
       vlongWindow.addLast(yaw);
     }
-    analyze(false);
-    analyze(true);
+    analyze(false, ctx);
+    analyze(true, ctx);
   }
 
-  private void analyze(boolean vlong) {
+  private void analyze(boolean vlong, LagCompensator.LagContext ctx) {
     Deque<Double> q = vlong ? vlongWindow : longWindow;
     double[] a = MathUtil.snapshotNonNull(q);
     int min = vlong ? MIN_VLONG : MIN_LONG;
@@ -72,13 +68,14 @@ public class QuantizationLongCheck extends AimCheck {
     double iqr = MathUtil.iqr(a);
     long now = System.currentTimeMillis();
     if (gcd > 0 && iqr < IQR_NORM_MAX) {
+      double env = clamp(1 - ctx.jitterMs / 200.0, 0.6, 1.0);
       if (vlong) {
         if (now - lastFailVLong < COOLDOWN_MS) return;
         hitsVLong++;
         if (hitsVLong >= HITS_REQ) {
           hitsVLong = 0;
           lastFailVLong = now;
-          fail(new DetectionResult(FAMILY, 1.0, Window.VERY_LONG, true, true, true));
+          fail(new DetectionResult(FAMILY, 1.0 * env, Window.VERY_LONG, true, true, true));
         }
       } else {
         if (now - lastFailLong < COOLDOWN_MS) return;
@@ -86,7 +83,7 @@ public class QuantizationLongCheck extends AimCheck {
         if (hitsLong >= HITS_REQ) {
           hitsLong = 0;
           lastFailLong = now;
-          fail(new DetectionResult(FAMILY, 0.9, Window.LONG, true, true, true));
+          fail(new DetectionResult(FAMILY, 0.9 * env, Window.LONG, true, true, true));
         }
       }
     } else {
@@ -104,5 +101,9 @@ public class QuantizationLongCheck extends AimCheck {
       out[i] = (int) Math.round(Math.abs(a[i] * scale));
     }
     return out;
+  }
+
+  private static double clamp(double v, double lo, double hi) {
+    return Math.max(lo, Math.min(hi, v));
   }
 }

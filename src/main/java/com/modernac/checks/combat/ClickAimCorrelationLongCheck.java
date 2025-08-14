@@ -4,6 +4,7 @@ import com.modernac.ModernACPlugin;
 import com.modernac.checks.aim.AimCheck;
 import com.modernac.engine.DetectionResult;
 import com.modernac.engine.Window;
+import com.modernac.net.LagCompensator;
 import com.modernac.player.PlayerData;
 import com.modernac.player.RotationData;
 import java.util.ArrayDeque;
@@ -17,8 +18,7 @@ public class ClickAimCorrelationLongCheck extends AimCheck {
   private static final String FAMILY = "AIM/ClickCoupling";
 
   private static final int MIN = 40;
-  private static final double YAW_MAX = 0.02;
-  private static final long DT_MAX_MS = 40L;
+  private static final double YAW_MAX_BASE = 0.02;
   private static final double RATE_HIGH = 0.70;
   private static final double RATE_CRIT = 0.85;
   private static final int HITS_REQ = 2;
@@ -59,8 +59,9 @@ public class ClickAimCorrelationLongCheck extends AimCheck {
         return;
       }
       long now = System.currentTimeMillis();
+      LagCompensator.LagContext ctx = plugin.getLagCompensator().estimate(data.getUuid());
       boolean coupled =
-          (now - lastRotTime) <= DT_MAX_MS && lastYaw <= YAW_MAX;
+          (now - lastRotTime) <= ctx.dtRotAimMs && lastYaw <= (YAW_MAX_BASE + ctx.yawRelax);
       synchronized (samples) {
         if (samples.size() >= 100) {
           boolean old = samples.pollFirst();
@@ -69,19 +70,14 @@ public class ClickAimCorrelationLongCheck extends AimCheck {
         samples.addLast(coupled);
         if (coupled) coupledCount++;
       }
-      evaluate();
+      evaluate(ctx);
     }
   }
 
-  private void evaluate() {
-    int ping = data.getCachedPing();
-    double[] tpsArr = Bukkit.getTPS();
-    double tps = tpsArr.length > 0 && Double.isFinite(tpsArr[0]) ? tpsArr[0] : 20.0;
-    if (ping <= 0 || ping > 180 || tps < 18.0) {
-      return;
-    }
+  private void evaluate(LagCompensator.LagContext ctx) {
     int size = samples.size();
-    if (size < MIN) {
+    int req = ctx.jitterMs > 30.0 ? 60 : MIN;
+    if (size < req) {
       return;
     }
     double rate = coupledCount / (double) size;
@@ -89,22 +85,27 @@ public class ClickAimCorrelationLongCheck extends AimCheck {
     if (now - lastFail < COOLDOWN_MS) {
       return;
     }
+    double env = clamp(1.0 - ctx.jitterMs / 120.0, 0.7, 1.0);
     if (rate >= RATE_CRIT) {
       hits++;
       if (hits >= HITS_REQ) {
         hits = 0;
         lastFail = now;
-        fail(new DetectionResult(FAMILY, 1.0, Window.LONG, true, true, true));
+        fail(new DetectionResult(FAMILY, 1.0 * env, Window.LONG, true, true, true));
       }
     } else if (rate >= RATE_HIGH) {
       hits++;
       if (hits >= HITS_REQ) {
         hits = 0;
         lastFail = now;
-        fail(new DetectionResult(FAMILY, 0.9, Window.LONG, true, true, true));
+        fail(new DetectionResult(FAMILY, 0.9 * env, Window.LONG, true, true, true));
       }
     } else {
       hits = 0;
     }
+  }
+
+  private static double clamp(double v, double lo, double hi) {
+    return Math.max(lo, Math.min(hi, v));
   }
 }

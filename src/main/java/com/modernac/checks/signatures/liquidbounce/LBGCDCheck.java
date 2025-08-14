@@ -4,6 +4,7 @@ import com.modernac.ModernACPlugin;
 import com.modernac.checks.aim.AimCheck;
 import com.modernac.engine.DetectionResult;
 import com.modernac.engine.Window;
+import com.modernac.net.LagCompensator;
 import com.modernac.player.PlayerData;
 import com.modernac.player.RotationData;
 import com.modernac.util.MathUtil;
@@ -26,8 +27,9 @@ public class LBGCDCheck extends AimCheck {
   public void handle(Object packet) {
     if (!(packet instanceof RotationData)) return;
     RotationData rot = (RotationData) packet;
+    LagCompensator.LagContext ctx = plugin.getLagCompensator().estimate(data.getUuid());
     double yaw = Math.abs(rot.getYawChange());
-    if (!Double.isFinite(yaw)) {
+    if (!Double.isFinite(yaw) || yaw < ctx.yawRelax) {
       return;
     }
     int quant = (int) Math.round(yaw * SCALE);
@@ -51,8 +53,9 @@ public class LBGCDCheck extends AimCheck {
       streak++;
       if (streak >= STREAK_LIMIT) {
         streak = 0;
+        double env = clamp(1 - ctx.jitterMs / 200.0, 0.6, 1.0);
         DetectionResult result =
-            new DetectionResult(getName(), 1.0, Window.LONG, true, true, true);
+            new DetectionResult(getName(), 1.0 * env, Window.LONG, true, true, true);
         fail(result);
       }
     } else {
@@ -61,5 +64,9 @@ public class LBGCDCheck extends AimCheck {
     synchronized (buffer) {
       buffer.clear();
     }
+  }
+
+  private static double clamp(double v, double lo, double hi) {
+    return Math.max(lo, Math.min(hi, v));
   }
 }

@@ -4,6 +4,7 @@ import com.modernac.ModernACPlugin;
 import com.modernac.checks.aim.AimCheck;
 import com.modernac.engine.DetectionResult;
 import com.modernac.engine.Window;
+import com.modernac.net.LagCompensator;
 import com.modernac.player.PlayerData;
 import com.modernac.player.RotationData;
 import com.modernac.util.MathUtil;
@@ -29,8 +30,9 @@ public class LBTweenCheck extends AimCheck {
       return;
     }
     RotationData rot = (RotationData) packet;
+    LagCompensator.LagContext ctx = plugin.getLagCompensator().estimate(data.getUuid());
     double yaw = rot.getYawChange();
-    if (!Double.isFinite(yaw)) {
+    if (!Double.isFinite(yaw) || Math.abs(yaw) < ctx.yawRelax) {
       return;
     }
     synchronized (yawDeltas) {
@@ -63,16 +65,23 @@ public class LBTweenCheck extends AimCheck {
         if (ratio > ratioMax) ratioMax = ratio;
       }
     }
-    if (std < 0.01 && ratioMax < 0.02) {
+    double stdTh = 0.01 + ctx.yawRelax;
+    double ratioTh = 0.02 + ctx.yawRelax;
+    if (std < stdTh && ratioMax < ratioTh) {
       streak++;
       if (streak >= STREAK_LIMIT) {
         streak = 0;
+        double env = clamp(1 - ctx.jitterMs / 200.0, 0.6, 1.0);
         DetectionResult result =
-            new DetectionResult(getName(), 0.9, Window.LONG, true, true, true);
+            new DetectionResult(getName(), 0.9 * env, Window.LONG, true, true, true);
         fail(result);
       }
     } else {
       streak = 0;
     }
+  }
+
+  private static double clamp(double v, double lo, double hi) {
+    return Math.max(lo, Math.min(hi, v));
   }
 }

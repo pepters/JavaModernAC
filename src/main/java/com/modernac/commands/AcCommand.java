@@ -3,7 +3,7 @@ package com.modernac.commands;
 import com.modernac.ModernACPlugin;
 import com.modernac.config.ConfigManager;
 import com.modernac.manager.PunishmentTier;
-import com.modernac.util.LatencyGuard;
+import com.modernac.net.LagCompensator;
 import com.modernac.util.TimeUtil;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -55,20 +55,17 @@ public class AcCommand implements CommandExecutor, TabCompleter {
           sender.sendMessage(plugin.getMessageManager().getMessage("commands.player_not_found"));
           return true;
         }
-        int ping = 0;
-        if (target.isOnline()) {
-          ping = ((Player) target).getPing();
-        }
-        double tps = Bukkit.getTPS()[0];
         long punish = plugin.getPunishmentManager().getRemaining(target.getUniqueId());
         long mitigate = plugin.getMitigationManager().getRemaining(target.getUniqueId());
         long ttl = plugin.getExemptManager().getRemaining(target.getUniqueId());
         com.modernac.engine.DetectionEngine.DetectionSummary sum =
             plugin.getDetectionEngine().getSummary(target.getUniqueId());
         ConfigManager cfg = plugin.getConfigManager();
+        LagCompensator.LagContext ctx =
+            plugin.getLagCompensator().estimate(target.getUniqueId());
         int limit = cfg.getUnstableConnectionLimit();
         double tpsGuard = cfg.getTpsSoftGuard();
-        boolean stable = ping > 0 && LatencyGuard.isStable(ping, tps, limit, tpsGuard);
+        boolean stable = ctx.rttMs < limit && ctx.tps >= tpsGuard;
         double shortW = sum != null ? sum.shortWindow : 0.0;
         double longW = sum != null ? sum.longWindow : 0.0;
         double veryLongW = sum != null ? sum.veryLongWindow : 0.0;
@@ -77,9 +74,9 @@ public class AcCommand implements CommandExecutor, TabCompleter {
                 + "Info for "
                 + target.getName()
                 + ": ping "
-                + ping
+                + ctx.rttMs
                 + "ms, tps "
-                + String.format("%.1f", tps)
+                + String.format("%.1f", ctx.tps)
                 + ", latencyOK="
                 + stable
                 + ", stabilityOK="

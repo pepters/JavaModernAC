@@ -4,6 +4,7 @@ import com.modernac.ModernACPlugin;
 import com.modernac.checks.Check;
 import com.modernac.engine.DetectionResult;
 import com.modernac.engine.Window;
+import com.modernac.net.LagCompensator;
 import com.modernac.player.PlayerData;
 import com.modernac.player.RotationData;
 import com.modernac.util.MathUtil;
@@ -45,12 +46,7 @@ public class ElytraTargetLongCheck extends Check {
     if (player == null || !player.isGliding()) {
       return;
     }
-    int ping = data.getCachedPing();
-    double[] tpsArr = Bukkit.getTPS();
-    double tps = tpsArr.length > 0 && Double.isFinite(tpsArr[0]) ? tpsArr[0] : 20.0;
-    if (ping <= 0 || ping > 180 || tps < 18.0) {
-      return;
-    }
+    LagCompensator.LagContext ctx = plugin.getLagCompensator().estimate(data.getUuid());
     if (!data.inRecentPvp(500)) {
       return;
     }
@@ -77,7 +73,10 @@ public class ElytraTargetLongCheck extends Check {
       return;
     }
     boolean magnet = false;
-    if (dir != null && prevDir != null && prevDir.distanceSquared(dir) > 1e-3 && Math.abs(yaw) < 0.01) {
+    if (dir != null
+        && prevDir != null
+        && prevDir.distanceSquared(dir) > 1e-3
+        && Math.abs(yaw) < 0.01 + ctx.yawRelax) {
       magnet = true;
     }
     prevDir = dir;
@@ -90,7 +89,8 @@ public class ElytraTargetLongCheck extends Check {
       if (streak >= M && now - lastFail >= COOLDOWN) {
         streak = 0;
         lastFail = now;
-        fail(new DetectionResult(FAMILY, 1.0, Window.LONG, true, true, true));
+        double env = clamp(1 - ctx.jitterMs / 200.0, 0.6, 1.0);
+        fail(new DetectionResult(FAMILY, 1.0 * env, Window.LONG, true, true, true));
       }
     } else {
       streak = 0;
@@ -108,5 +108,9 @@ public class ElytraTargetLongCheck extends Check {
       var += d * d;
     }
     return Math.sqrt(var / n);
+  }
+
+  private static double clamp(double v, double lo, double hi) {
+    return Math.max(lo, Math.min(hi, v));
   }
 }

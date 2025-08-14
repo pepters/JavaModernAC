@@ -6,6 +6,14 @@ latency:
   unstable_connection_latency_limit: 1750
   tps_soft_guard: 18.0
 
+lagcomp:
+  enabled: true
+  jitterEwmaAlpha: 0.1
+  dtBase: 35
+  dtMin: 25
+  dtMax: 90
+  yawRelaxPerJitterMs: 0.00025
+
 checks:
   experimental_detections: true
   combat_tolerance: "normal"
