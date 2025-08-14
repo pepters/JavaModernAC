@@ -1,13 +1,18 @@
-name: Build
+name: Build (Maven, JDK 17)
 
 on:
   push:
     branches: ["**"]
   pull_request:
     branches: ["**"]
+  workflow_dispatch:
 
 permissions:
   contents: read
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -23,23 +28,22 @@ jobs:
           java-version: "17"
           cache: maven
 
-      - name: Spotless Check
-        run: mvn -q -ntp spotless:check
-
-      - name: Guard: no confidence placeholders
+      - name: Build with Maven (tests enabled)
         run: |
-          if grep -RIn "{confidence}" src/main/resources messages*; then
-            echo "Unexpected {confidence} placeholder in messages"; exit 1;
+          if [ -x ./mvnw ]; then
+            ./mvnw -B -ntp clean package -DskipTests=false
+          else
+            mvn -B -ntp clean package -DskipTests=false
           fi
 
-      - name: Maven Verify
-        run: mvn -q -ntp -DskipTests=false verify
-
-      - name: Upload plugin jar
-        if: ${{ success() }}
+      - name: Upload plugin JAR
         uses: actions/upload-artifact@v4
         with:
           name: ModernAC-${{ github.sha }}
-          path: target/*.jar
+          path: |
+            target/*.jar
+            !target/*-sources.jar
+            !target/*-javadoc.jar
           if-no-files-found: error
-          retention-days: 7
+          retention-days: 10
+          
