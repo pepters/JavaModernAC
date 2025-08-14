@@ -57,7 +57,9 @@ public class DetectionEngine {
     PlayerRecord record = records.computeIfAbsent(uuid, u -> new PlayerRecord());
     FamilyRecord fam = record.families.computeIfAbsent(result.getFamily(), f -> new FamilyRecord());
     double prev = fam.windowScores.getOrDefault(result.getWindow(), 0.0);
-      fam.windowScores.put(result.getWindow(), Math.max(prev, result.getEvidenceScore()));
+    fam.windowScores.put(result.getWindow(), Math.max(prev, result.getEvidenceScore()));
+    fam.latencyOK &= result.isLatencyOK();
+    fam.stabilityOK &= result.isStabilityOK();
     ConfigManager cfg = plugin.getConfigManager();
     PunishmentTier tier = cfg.getCheckTier(check.getName());
     if (tier.ordinal() < fam.tier.ordinal()) {
@@ -114,10 +116,10 @@ public class DetectionEngine {
     for (Map.Entry<String, FamilyRecord> e : record.families.entrySet()) {
       String famName = e.getKey();
       FamilyRecord fam = e.getValue();
-      double famScore = 0.0;
+      double famScore =
+          fam.windowScores.values().stream().mapToDouble(Double::doubleValue).max().orElse(0.0);
       int famWindows = 0;
       for (double v : fam.windowScores.values()) {
-        if (v > famScore) famScore = v;
         if (v >= 0.90) famWindows++;
       }
       if (fam.latencyOK && fam.stabilityOK && famScore >= 0.90) {
@@ -257,8 +259,10 @@ public class DetectionEngine {
     PunishmentTier currentTier;
   }
 
-    private static class FamilyRecord {
-      final Map<Window, Double> windowScores = new EnumMap<>(Window.class);
-      PunishmentTier tier = PunishmentTier.MEDIUM;
-    }
+  private static class FamilyRecord {
+    final Map<Window, Double> windowScores = new EnumMap<>(Window.class);
+    boolean latencyOK = true;
+    boolean stabilityOK = true;
+    PunishmentTier tier = PunishmentTier.MEDIUM;
   }
+}
