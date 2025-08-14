@@ -14,6 +14,7 @@ import com.modernac.manager.ExemptManager;
 import com.modernac.manager.MitigationManager;
 import com.modernac.manager.PunishmentManager;
 import com.modernac.messages.MessageManager;
+import com.modernac.net.LagCompensator;
 import io.github.retrooper.packetevents.factory.spigot.SpigotPacketEventsBuilder;
 import java.util.UUID;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -30,6 +31,7 @@ public class ModernACPlugin extends JavaPlugin {
   private MitigationManager mitigationManager;
   private DetectionEngine detectionEngine;
   private ExemptManager exemptManager;
+  private LagCompensator lagCompensator;
 
   @Override
   public void onLoad() {
@@ -52,6 +54,16 @@ public class ModernACPlugin extends JavaPlugin {
     this.mitigationManager = new MitigationManager(this);
     this.detectionEngine = new DetectionEngine(this);
     this.exemptManager = new ExemptManager(this);
+    this.lagCompensator =
+        new LagCompensator(
+            configManager.isLagCompEnabled(),
+            configManager.getLagCompAlpha(),
+            configManager.getLagCompDtBase(),
+            configManager.getLagCompDtMin(),
+            configManager.getLagCompDtMax(),
+            configManager.getLagCompYawRelaxPerJitter(),
+            configManager.getUnstableConnectionLimit(),
+            configManager.getTpsSoftGuard());
 
     PacketEvents.getAPI().init();
     // Регистрируем 2.9.x слушатель
@@ -145,6 +157,10 @@ public class ModernACPlugin extends JavaPlugin {
     return exemptManager;
   }
 
+  public LagCompensator getLagCompensator() {
+    return lagCompensator;
+  }
+
   public void reload() {
     reloadConfig();
     this.configManager = new ConfigManager(this);
@@ -155,6 +171,16 @@ public class ModernACPlugin extends JavaPlugin {
     this.mitigationManager.reload();
     this.detectionEngine.reload();
     this.exemptManager.load();
+    this.lagCompensator =
+        new LagCompensator(
+            configManager.isLagCompEnabled(),
+            configManager.getLagCompAlpha(),
+            configManager.getLagCompDtBase(),
+            configManager.getLagCompDtMin(),
+            configManager.getLagCompDtMax(),
+            configManager.getLagCompYawRelaxPerJitter(),
+            configManager.getUnstableConnectionLimit(),
+            configManager.getTpsSoftGuard());
   }
 
   public void exemptPlayer(UUID uuid, long durationMs) {

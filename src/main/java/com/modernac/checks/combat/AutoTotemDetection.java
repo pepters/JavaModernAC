@@ -8,6 +8,7 @@ import com.modernac.player.PlayerData;
 import java.util.Locale;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
+import com.modernac.net.LagCompensator;
 
 /** Experimental detection for auto totem usage. */
 public class AutoTotemDetection extends Check {
@@ -65,22 +66,11 @@ public class AutoTotemDetection extends Check {
     if (player == null) {
       return;
     }
-    int ping = player.getPing();
-    double tps = 20.0;
-    double[] tpsArr = Bukkit.getTPS();
-    if (tpsArr.length > 0 && Double.isFinite(tpsArr[0])) {
-      tps = tpsArr[0];
-    }
-    if (ping > 180 || tps < 18.0 || !lastLos) {
-      trace(
-          "gate-fail ping="
-              + ping
-              + " tps="
-              + String.format(Locale.US, "%.1f", tps)
-              + " los="
-              + lastLos);
+    if (!lastLos) {
+      trace("gate-fail los=" + lastLos);
       return;
     }
+    LagCompensator.LagContext ctx = plugin.getLagCompensator().estimate(getUuid());
     double suspicion;
     if (reaction <= 50) {
       suspicion = 1.0;
@@ -100,6 +90,7 @@ public class AutoTotemDetection extends Check {
     double longAvg = longSum / (longCount == 0 ? 1 : longCount);
     double veryLongAvg = veryLongSum / (veryLongCount == 0 ? 1 : veryLongCount);
     double e = 0.6 * shortAvg + 0.3 * longAvg + 0.1 * veryLongAvg;
+    e *= clamp(1 - ctx.jitterMs / 200.0, 0.6, 1.0);
     trace(
         "reaction="
             + reaction
@@ -131,5 +122,9 @@ public class AutoTotemDetection extends Check {
     veryLongSum += s;
     if (veryLongCount < veryLongBuf.length) veryLongCount++;
     veryLongIdx = (veryLongIdx + 1) % veryLongBuf.length;
+  }
+
+  private static double clamp(double v, double lo, double hi) {
+    return Math.max(lo, Math.min(hi, v));
   }
 }

@@ -3,6 +3,7 @@ package com.modernac.checks.aim;
 import com.modernac.ModernACPlugin;
 import com.modernac.engine.DetectionResult;
 import com.modernac.engine.Window;
+import com.modernac.net.LagCompensator;
 import com.modernac.player.PlayerData;
 import com.modernac.player.RotationData;
 import com.modernac.util.MathUtil;
@@ -36,14 +37,7 @@ public class RankLongTermCheck extends AimCheck {
     if (!Double.isFinite(yaw)) {
       return;
     }
-    Player player = Bukkit.getPlayer(data.getUuid());
-    double[] tpsArr = Bukkit.getTPS();
-    double tps = tpsArr.length > 0 && Double.isFinite(tpsArr[0]) ? tpsArr[0] : 20.0;
-    int ping = player != null ? player.getPing() : 0;
-    if (ping > 180 || tps < 18.0) {
-      trace("gate-fail ping=" + ping + ", tps=" + String.format(Locale.US, "%.1f", tps));
-      return;
-    }
+    LagCompensator.LagContext ctx = plugin.getLagCompensator().estimate(data.getUuid());
     synchronized (samples) {
       if (samples.size() >= MIN_SAMPLES) {
         samples.pollFirst();
@@ -64,9 +58,14 @@ public class RankLongTermCheck extends AimCheck {
       }
     }
     if (distinct < 50) {
+      double e = 0.9 * clamp(1 - ctx.jitterMs / 200.0, 0.6, 1.0);
       DetectionResult result =
-          new DetectionResult(FAMILY, 0.9, Window.LONG, true, true, true);
+          new DetectionResult(FAMILY, e, Window.LONG, true, true, true);
       fail(result);
     }
+  }
+
+  private static double clamp(double v, double lo, double hi) {
+    return Math.max(lo, Math.min(hi, v));
   }
 }

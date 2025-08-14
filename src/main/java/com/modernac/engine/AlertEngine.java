@@ -190,12 +190,17 @@ public class AlertEngine {
                     + sample.ping
                     + ", tps="
                     + String.format(Locale.US, "%.1f", sample.tps));
-        if (plugin.getConfigManager().isAlertLogToConsole()) {
-          Bukkit.getConsoleSender().sendMessage(msg);
-        }
+        boolean anyStaff = false;
         for (Player staff : Bukkit.getOnlinePlayers()) {
           if (staff.hasPermission(perm)) {
             staff.sendMessage(msg);
+            anyStaff = true;
+          }
+        }
+        if (plugin.getConfigManager().isAlertLogToConsole()) {
+          Player online = Bukkit.getPlayer(playerId);
+          if (online != null || anyStaff) {
+            Bukkit.getConsoleSender().sendMessage(msg);
           }
         }
       }

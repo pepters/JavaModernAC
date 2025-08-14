@@ -7,8 +7,6 @@ import com.modernac.checks.combat.CombatCheckFactory;
 import com.modernac.checks.latency.LatencyCheckFactory;
 import com.modernac.checks.misc.MiscCheckFactory;
 import com.modernac.checks.signatures.SignatureCheckFactory;
-import com.modernac.config.ConfigManager;
-import com.modernac.util.LatencyGuard;
 import com.modernac.logging.DetectionLogger;
 import com.modernac.player.PlayerData;
 import com.modernac.player.RotationData;
@@ -94,13 +92,6 @@ public class CheckManager {
     if (packet instanceof RotationData) {
       RotationData rot = (RotationData) packet;
       data.recordRotation(rot);
-      int ping = data.getCachedPing();
-      double[] tpsArr = org.bukkit.Bukkit.getTPS();
-      double tps =
-          tpsArr.length > 0 && Double.isFinite(tpsArr[0]) ? tpsArr[0] : 20.0;
-      ConfigManager cfg = plugin.getConfigManager();
-      boolean stable =
-          ping > 0 && LatencyGuard.isStable(ping, tps, cfg.getUnstableConnectionLimit(), cfg.getTpsSoftGuard());
       org.bukkit.entity.Player player = org.bukkit.Bukkit.getPlayer(uuid);
       org.bukkit.entity.Entity target = data.getLastTarget();
       processAim =
@@ -114,7 +105,6 @@ public class CheckManager {
               && !player.isHandRaised()
               && player.getOpenInventory().getType()
                   == org.bukkit.event.inventory.InventoryType.CRAFTING
-              && stable
               && Double.isFinite(rot.getYawChange());
     }
     final boolean aimOk = processAim;

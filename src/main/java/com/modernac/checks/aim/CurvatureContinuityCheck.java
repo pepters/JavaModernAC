@@ -3,6 +3,7 @@ package com.modernac.checks.aim;
 import com.modernac.ModernACPlugin;
 import com.modernac.engine.DetectionResult;
 import com.modernac.engine.Window;
+import com.modernac.net.LagCompensator;
 import com.modernac.player.PlayerData;
 import com.modernac.player.RotationData;
 import com.modernac.util.MathUtil;
@@ -40,12 +41,7 @@ public class CurvatureContinuityCheck extends AimCheck {
     if (!Double.isFinite(yaw)) {
       return;
     }
-    int ping = data.getCachedPing();
-    double[] tpsArr = Bukkit.getTPS();
-    double tps = tpsArr.length > 0 && Double.isFinite(tpsArr[0]) ? tpsArr[0] : 20.0;
-    if (ping <= 0 || ping > 180 || tps < 18.0) {
-      return;
-    }
+    LagCompensator.LagContext ctx = plugin.getLagCompensator().estimate(data.getUuid());
     synchronized (window) {
       if (window.size() >= 256) {
         window.pollFirst();
@@ -67,19 +63,20 @@ public class CurvatureContinuityCheck extends AimCheck {
       if (now - lastFail < COOLDOWN_MS) {
         return;
       }
+      double env = clamp(1 - ctx.jitterMs / 200.0, 0.6, 1.0);
       if (var <= VAR_D2_CRIT) {
         hits++;
         if (hits >= HITS_REQ) {
           hits = 0;
           lastFail = now;
-          fail(new DetectionResult(FAMILY, 1.0, Window.LONG, true, true, true));
+          fail(new DetectionResult(FAMILY, 1.0 * env, Window.LONG, true, true, true));
         }
       } else if (var <= VAR_D2_HIGH) {
         hits++;
         if (hits >= HITS_REQ) {
           hits = 0;
           lastFail = now;
-          fail(new DetectionResult(FAMILY, 0.9, Window.LONG, true, true, true));
+          fail(new DetectionResult(FAMILY, 0.9 * env, Window.LONG, true, true, true));
         }
       } else {
         hits = 0;
@@ -137,5 +134,9 @@ public class CurvatureContinuityCheck extends AimCheck {
       }
     }
     return d.length > 1 ? switches / (double) (d.length - 1) : 0.0;
+  }
+
+  private static double clamp(double v, double lo, double hi) {
+    return Math.max(lo, Math.min(hi, v));
   }
 }

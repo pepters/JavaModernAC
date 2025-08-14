@@ -27,6 +27,30 @@ public class ConfigManager {
     return config.getDouble("latency.tps_soft_guard", 18.0D);
   }
 
+  public boolean isLagCompEnabled() {
+    return config.getBoolean("lagcomp.enabled", true);
+  }
+
+  public double getLagCompAlpha() {
+    return config.getDouble("lagcomp.jitterEwmaAlpha", 0.1D);
+  }
+
+  public int getLagCompDtBase() {
+    return config.getInt("lagcomp.dtBase", 35);
+  }
+
+  public int getLagCompDtMin() {
+    return config.getInt("lagcomp.dtMin", 25);
+  }
+
+  public int getLagCompDtMax() {
+    return config.getInt("lagcomp.dtMax", 90);
+  }
+
+  public double getLagCompYawRelaxPerJitter() {
+    return config.getDouble("lagcomp.yawRelaxPerJitterMs", 0.00025D);
+  }
+
   public boolean isExperimentalDetections() {
     return config.getBoolean("checks.experimental_detections", false);
   }
