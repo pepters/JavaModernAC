@@ -5,6 +5,7 @@ import com.modernac.checks.Check;
 import com.modernac.config.ConfigManager;
 import com.modernac.engine.AlertEngine.AlertDetail;
 import com.modernac.manager.PunishmentTier;
+import com.modernac.util.LatencyGuard;
 import java.util.EnumMap;
 import java.util.Locale;
 import java.util.Map;
@@ -68,20 +69,20 @@ public class DetectionEngine {
     int ping = pd != null ? pd.getCachedPing() : -1;
     double[] tpsArr = Bukkit.getTPS();
     double tps = tpsArr.length > 0 && Double.isFinite(tpsArr[0]) ? tpsArr[0] : 20.0;
-    EvalOutcome outcome = evaluate(uuid, record, ping, tps);
-    boolean pingKnown = ping > 0 && ping <= 180;
-    boolean tpsOK = tps >= 18.0;
-    boolean alertEligible =
-        pingKnown
-            && tpsOK
-            && outcome.families >= cfg.getMinFamiliesForBan()
-            && (!cfg.isMultiWindowConfirmationRequired() || outcome.windows >= 2)
-            && outcome.highest != null
-            && (outcome.highest == PunishmentTier.HIGH
-                || outcome.highest == PunishmentTier.CRITICAL);
-    if (!pingKnown || !tpsOK) {
-      outcome.punish = false;
-    }
+      EvalOutcome outcome = evaluate(uuid, record, ping, tps);
+      boolean stable =
+          ping > 0
+              && LatencyGuard.isStable(ping, tps, cfg.getUnstableConnectionLimit(), cfg.getTpsSoftGuard());
+      boolean alertEligible =
+          stable
+              && outcome.families >= cfg.getMinIndependentFamiliesForAction()
+              && (!cfg.isMultiWindowConfirmationRequired() || outcome.windows >= 2)
+              && outcome.highest != null
+              && (outcome.highest == PunishmentTier.HIGH
+                  || outcome.highest == PunishmentTier.CRITICAL);
+      if (!stable) {
+        outcome.punish = false;
+      }
     if (alertEligible) {
       double conf = outcome.highest == PunishmentTier.CRITICAL ? 1.0 : 0.9;
       AlertDetail detail =
@@ -115,10 +116,10 @@ public class DetectionEngine {
     for (Map.Entry<String, FamilyRecord> e : record.families.entrySet()) {
       String famName = e.getKey();
       FamilyRecord fam = e.getValue();
-      double famScore = 0.0;
+      double famScore =
+          fam.windowScores.values().stream().mapToDouble(Double::doubleValue).max().orElse(0.0);
       int famWindows = 0;
       for (double v : fam.windowScores.values()) {
-        if (v > famScore) famScore = v;
         if (v >= 0.90) famWindows++;
       }
       if (fam.latencyOK && fam.stabilityOK && famScore >= 0.90) {
@@ -212,16 +213,24 @@ public class DetectionEngine {
     double shortMax = 0.0;
     double longMax = 0.0;
     double veryLongMax = 0.0;
-    boolean latencyOK = true;
-    boolean stabilityOK = true;
     for (FamilyRecord fam : record.families.values()) {
       shortMax = Math.max(shortMax, fam.windowScores.getOrDefault(Window.SHORT, 0.0));
       longMax = Math.max(longMax, fam.windowScores.getOrDefault(Window.LONG, 0.0));
       veryLongMax = Math.max(veryLongMax, fam.windowScores.getOrDefault(Window.VERY_LONG, 0.0));
-      latencyOK &= fam.latencyOK;
-      stabilityOK &= fam.stabilityOK;
     }
-    return new DetectionSummary(latencyOK, stabilityOK, shortMax, longMax, veryLongMax);
+    int ping = -1;
+    com.modernac.player.PlayerData pd = plugin.getCheckManager().getPlayerData(uuid);
+    if (pd != null) {
+      ping = pd.getCachedPing();
+    }
+    double[] tpsArr = org.bukkit.Bukkit.getTPS();
+    double tps = tpsArr.length > 0 && Double.isFinite(tpsArr[0]) ? tpsArr[0] : 20.0;
+    ConfigManager cfg = plugin.getConfigManager();
+    boolean stable =
+        ping > 0
+            && LatencyGuard.isStable(
+                ping, tps, cfg.getUnstableConnectionLimit(), cfg.getTpsSoftGuard());
+    return new DetectionSummary(stable, stable, shortMax, longMax, veryLongMax);
   }
 
   public static class DetectionSummary {

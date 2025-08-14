@@ -1,7 +1,9 @@
 package com.modernac.commands;
 
 import com.modernac.ModernACPlugin;
+import com.modernac.config.ConfigManager;
 import com.modernac.manager.PunishmentTier;
+import com.modernac.util.LatencyGuard;
 import com.modernac.util.TimeUtil;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -63,8 +65,10 @@ public class AcCommand implements CommandExecutor, TabCompleter {
         long ttl = plugin.getExemptManager().getRemaining(target.getUniqueId());
         com.modernac.engine.DetectionEngine.DetectionSummary sum =
             plugin.getDetectionEngine().getSummary(target.getUniqueId());
-        boolean latencyOK = sum != null && sum.latencyOK;
-        boolean stabilityOK = sum != null && sum.stabilityOK;
+        ConfigManager cfg = plugin.getConfigManager();
+        int limit = cfg.getUnstableConnectionLimit();
+        double tpsGuard = cfg.getTpsSoftGuard();
+        boolean stable = ping > 0 && LatencyGuard.isStable(ping, tps, limit, tpsGuard);
         double shortW = sum != null ? sum.shortWindow : 0.0;
         double longW = sum != null ? sum.longWindow : 0.0;
         double veryLongW = sum != null ? sum.veryLongWindow : 0.0;
@@ -77,9 +81,13 @@ public class AcCommand implements CommandExecutor, TabCompleter {
                 + "ms, tps "
                 + String.format("%.1f", tps)
                 + ", latencyOK="
-                + latencyOK
+                + stable
                 + ", stabilityOK="
-                + stabilityOK
+                + stable
+                + ", limit="
+                + limit
+                + "ms, tpsGuard="
+                + String.format("%.1f", tpsGuard)
                 + ", max25="
                 + String.format("%.2f", shortW)
                 + ", max100="
