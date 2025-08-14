@@ -1,6 +1,6 @@
 alerts:
-  staff_format: "&8[&cAC&8] &7{player} &8→ &c{families}&8 @ &7{confidence}% &8(&7ping {ping}ms, tps {tps}&8)"
-  debug_format: "&8[&bAC-Debug&8] &7{player}: &c{families}&8 @ &7{confidence}% &8(&7ping {ping}ms, tps {tps}&8)"
+  staff_format: "&8[&cAC&8] &7{player} &8→ &c{families}&8 (&7ping {ping}ms, tps {tps}&8)"
+  debug_format: "&8[&bAC-Debug&8] &7{player}: &c{families}&8 (&7ping {ping}ms, tps {tps}&8)"
 commands:
   reloaded: "&aConfiguration reloaded."
   no_permission: "&cYou do not have permission."

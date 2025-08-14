@@ -54,9 +54,9 @@ ModernAC — лёгкий боевой античит, нацеленный на
 | `/ac debug <ник>` | Вкл/выкл детальный file‑trace для игрока | `ac.command.debug` |
 | `/ac exempt <ник> <время>` | Временно исключить игрока (напр. `10s`, `5m`, `1h`) | `ac.command.exempt` |
 | `/ac reload` | Перезагрузка конфигов/сообщений, рестарт таймеров | `ac.command.reload` |
-| `/ac devfake <ник>` | (dev) синтетический сигнал для тестов | `ac.use` |
+| `/ac devfake <ник>` | (dev) синтетический сигнал для тестов | `modernac.dev` |
 
-Права: `ac.use`, `ac.alerts`, `ac.command.info`, `ac.command.debug`, `ac.command.exempt`, `ac.command.reload`.
+Права: `ac.use`, `ac.alerts`, `ac.command.info`, `ac.command.debug`, `ac.command.exempt`, `ac.command.reload`, `modernac.dev`.
 
 ---
 

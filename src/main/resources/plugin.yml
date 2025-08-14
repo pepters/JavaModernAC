@@ -30,3 +30,6 @@ permissions:
   ac.command.reload:
     description: Use /ac reload
     default: op
+  modernac.dev:
+    description: Access developer commands
+    default: op

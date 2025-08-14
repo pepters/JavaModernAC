@@ -1,6 +1,7 @@
 package com.modernac.util;
 
 import java.util.Arrays;
+import java.util.Deque;
 
 public final class MathUtil {
   private MathUtil() {}
@@ -27,5 +28,34 @@ public final class MathUtil {
     double q1 = copy[n / 4];
     double q3 = copy[3 * n / 4];
     return q3 - q1;
+  }
+
+  public static double[] snapshotNonNull(Deque<Double> q) {
+    Double[] tmp;
+    synchronized (q) {
+      tmp = q.toArray(new Double[0]);
+    }
+    double[] out = new double[tmp.length];
+    int n = 0;
+    for (Double d : tmp) {
+      if (d != null) {
+        double v = d.doubleValue();
+        if (!Double.isNaN(v) && !Double.isInfinite(v)) out[n++] = v;
+      }
+    }
+    return n == out.length ? out : Arrays.copyOf(out, n);
+  }
+
+  public static int[] snapshotInt(Deque<Integer> q) {
+    Integer[] tmp;
+    synchronized (q) {
+      tmp = q.toArray(new Integer[0]);
+    }
+    int[] out = new int[tmp.length];
+    int n = 0;
+    for (Integer it : tmp) {
+      if (it != null) out[n++] = it.intValue();
+    }
+    return n == out.length ? out : Arrays.copyOf(out, n);
   }
 }

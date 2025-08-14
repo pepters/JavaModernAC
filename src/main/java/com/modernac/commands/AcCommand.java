@@ -1,6 +1,7 @@
 package com.modernac.commands;
 
 import com.modernac.ModernACPlugin;
+import com.modernac.manager.PunishmentTier;
 import com.modernac.util.TimeUtil;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -166,6 +167,10 @@ public class AcCommand implements CommandExecutor, TabCompleter {
         sender.sendMessage(plugin.getMessageManager().getMessage("commands.reloaded"));
         return true;
       case "devfake":
+        if (!sender.hasPermission("modernac.dev")) {
+          sender.sendMessage(plugin.getMessageManager().getMessage("commands.no_permission"));
+          return true;
+        }
         if (args.length < 2) {
           sender.sendMessage(plugin.getMessageManager().getMessage("commands.usage"));
           return true;
@@ -177,10 +182,10 @@ public class AcCommand implements CommandExecutor, TabCompleter {
         }
         plugin
             .getAlertEngine()
-            .queueAlert(
+            .enqueue(
                 target.getUniqueId(),
                 new com.modernac.engine.AlertEngine.AlertDetail(
-                    "DEV", "SHORT", 1.0, 0, Bukkit.getTPS()[0]),
+                    "DEV", "SHORT", 1.0, 0, Bukkit.getTPS()[0], PunishmentTier.HIGH, false),
                 false);
         sender.sendMessage(ChatColor.GREEN + "Dev alert queued for " + target.getName());
         return true;
