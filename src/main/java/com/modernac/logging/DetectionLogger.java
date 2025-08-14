@@ -32,7 +32,6 @@ public class DetectionLogger {
   private final Set<UUID> debugPlayers = ConcurrentHashMap.newKeySet();
 
   private boolean traceEnabled;
-  private boolean traceToConsole;
   private boolean traceToFile;
   private int traceSample;
   private Set<String> traceOnly;
@@ -64,7 +63,6 @@ public class DetectionLogger {
   public void reload() {
     ConfigManager cfg = plugin.getConfigManager();
     traceEnabled = cfg.isTraceEnabled();
-    traceToConsole = cfg.isTraceToConsole();
     traceToFile = cfg.isTraceToFile();
     traceSample = cfg.getTraceSamplePerSecond();
     traceOnly = new HashSet<>();
@@ -121,14 +119,8 @@ public class DetectionLogger {
     String line =
         format.format(new Date()) + " [" + getName(uuid) + "] " + detector + " - " + message;
 
-    boolean toFile = debug || traceToFile;
-    boolean toConsole = traceToConsole && !debug;
-
-    if (toFile) {
+    if (debug || traceToFile) {
       writeAsync(traceFile, line);
-    }
-    if (toConsole) {
-      logConsole(line);
     }
   }
 
@@ -162,8 +154,6 @@ public class DetectionLogger {
         .info(
             "Logging: trace[enabled="
                 + traceEnabled
-                + ", console="
-                + traceToConsole
                 + ", file="
                 + traceToFile
                 + ", sample="
