@@ -60,8 +60,15 @@ public class DetectionEngine {
       tps = tpsArr[0];
     }
     EvalOutcome outcome = evaluate(uuid, record, ping, tps);
-    if (outcome.highest == PunishmentTier.HIGH || outcome.highest == PunishmentTier.CRITICAL) {
-      double conf = (outcome.highest == PunishmentTier.CRITICAL) ? 1.0 : 0.9;
+    boolean alertEligible =
+        outcome.punish
+            || outcome.highest == PunishmentTier.HIGH
+            || outcome.highest == PunishmentTier.CRITICAL;
+    if (alertEligible) {
+      double conf =
+          outcome.highest == PunishmentTier.CRITICAL
+              ? 1.0
+              : (outcome.highest == PunishmentTier.HIGH ? 0.9 : 0.75);
       AlertDetail detail =
           new AlertDetail(
               result.getFamily(),

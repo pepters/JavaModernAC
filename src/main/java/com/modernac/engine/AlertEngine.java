@@ -58,9 +58,6 @@ public class AlertEngine {
   }
 
   public void enqueue(UUID uuid, AlertDetail detail, boolean critical) {
-    if (detail.tier != PunishmentTier.HIGH && detail.tier != PunishmentTier.CRITICAL) {
-      return;
-    }
     long now = System.currentTimeMillis();
     detail.created = now;
     if (critical && criticalFirst.add(uuid)) {
@@ -137,16 +134,6 @@ public class AlertEngine {
           }
         }
         if (batch.isEmpty()) {
-          continue;
-        }
-        boolean eligible = false;
-        for (AlertDetail d : batch) {
-          if (d.tier == PunishmentTier.HIGH || d.tier == PunishmentTier.CRITICAL) {
-            eligible = true;
-            break;
-          }
-        }
-        if (!eligible) {
           continue;
         }
         lastSent.put(playerId, now);
