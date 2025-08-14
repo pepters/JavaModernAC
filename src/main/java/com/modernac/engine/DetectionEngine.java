@@ -22,26 +22,8 @@ public class DetectionEngine {
     this.plugin = plugin;
   }
 
-  private static final Set<String> HEURISTICS =
-      Set.of(
-          "Simple heuristic",
-          "Aggressive Component",
-          "Randomizer flaw Heuristic",
-          "TriggerBot",
-          "Blink",
-          "Snap",
-          "Improbable");
-
   private static final Set<String> NON_HEURISTIC =
-      Set.of(
-          "Rank",
-          "IQR",
-          "zFactor",
-          "Pattern Analysis",
-          "Pattern Statistics",
-          "PerfectEntropy",
-          "LBGCD",
-          "LBTween");
+      Set.of("AIM/Outliers", "AIM/Patterns", "PerfectEntropy", "LBGCD", "LBTween");
 
   public void record(Check check, int vl, boolean punishable, boolean experimental) {
     if (experimental && !plugin.getConfigManager().isExperimentalDetections()) {

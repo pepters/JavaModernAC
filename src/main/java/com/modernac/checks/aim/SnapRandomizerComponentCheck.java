@@ -7,7 +7,7 @@ import com.modernac.player.RotationData;
 public class SnapRandomizerComponentCheck extends AimCheck {
 
   public SnapRandomizerComponentCheck(ModernACPlugin plugin, PlayerData data) {
-    super(plugin, data, "Snap/Randomizer Component", false);
+    super(plugin, data, "Snap/Randomizer Component", true);
   }
 
   private double lastYaw, lastPitch;

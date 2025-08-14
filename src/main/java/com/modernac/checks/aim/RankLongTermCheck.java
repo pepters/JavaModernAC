@@ -11,6 +11,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
 public class RankLongTermCheck extends AimCheck {
+  private static final String FAMILY = "AIM/Outliers";
 
   public RankLongTermCheck(ModernACPlugin plugin, PlayerData data) {
     super(plugin, data, "Rank Long-term", false);
@@ -59,7 +60,9 @@ public class RankLongTermCheck extends AimCheck {
       }
     }
     if (distinct < 50) {
-      fail(1, true);
+      DetectionResult result =
+          new DetectionResult(FAMILY, 1.0, Window.LONG, true, true, true);
+      fail(result);
     }
   }
 }

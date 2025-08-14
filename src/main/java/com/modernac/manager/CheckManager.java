@@ -96,8 +96,19 @@ public class CheckManager {
       double[] tpsArr = org.bukkit.Bukkit.getTPS();
       double tps =
           tpsArr.length > 0 && Double.isFinite(tpsArr[0]) ? tpsArr[0] : 20.0;
+      org.bukkit.entity.Player player = org.bukkit.Bukkit.getPlayer(uuid);
+      org.bukkit.entity.Entity target = data.getLastTarget();
       processAim =
           data.inRecentPvp(500)
+              && player != null
+              && target instanceof org.bukkit.entity.Player
+              && player.hasLineOfSight(target)
+              && player.getLocation().distanceSquared(target.getLocation()) <= 10.24
+              && !player.isGliding()
+              && !player.isRiptiding()
+              && !player.isHandRaised()
+              && player.getOpenInventory().getType()
+                  == org.bukkit.event.inventory.InventoryType.CRAFTING
               && ping > 0
               && ping <= 180
               && tps >= 18.0
