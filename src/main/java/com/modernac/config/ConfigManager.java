@@ -51,6 +51,30 @@ public class ConfigManager {
     return config.getDouble("lagcomp.yawRelaxPerJitterMs", 0.00025D);
   }
 
+  public double getLagAlpha() {
+    return config.getDouble("lag.alpha", 0.2D);
+  }
+
+  public double getLagJitterAlpha() {
+    return config.getDouble("lag.jitter.alpha", 0.2D);
+  }
+
+  public int getLagStableRtt() {
+    return config.getInt("lag.stable.rtt", 160);
+  }
+
+  public int getLagStableJitter() {
+    return config.getInt("lag.stable.jitter", 25);
+  }
+
+  public double getLagStableTps() {
+    return config.getDouble("lag.stable.tps", 19.0D);
+  }
+
+  public long getLagBackfillMs() {
+    return config.getLong("lag.backfill.ms", 75L);
+  }
+
   public boolean isExperimentalDetections() {
     return config.getBoolean("checks.experimental_detections", false);
   }

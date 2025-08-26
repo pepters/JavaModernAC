@@ -68,6 +68,8 @@ public class PacketListenerImpl extends SimplePacketListenerAbstract {
     double pitchChange = Math.abs(pitch - lastPitchVal);
     lastYaw.put(uuid, yaw);
     lastPitch.put(uuid, pitch);
-    manager.handle(uuid, new RotationData(yawChange, pitchChange));
+    var ctx = plugin.getLagCompensator().estimate(uuid);
+    long corrected = System.currentTimeMillis() - ctx.oneWayMs;
+    manager.handle(uuid, new RotationData(yawChange, pitchChange, corrected, ctx.stable));
   }
 }
